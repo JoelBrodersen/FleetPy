@@ -45,6 +45,7 @@ def get_src_simulation_environments():
     sim_env_dict["BrokerDecision"] = ("src.BrokerSimulation", "BrokerDecisionSimulation")
     sim_env_dict["UserDecisionSimulation"] = ("src.BrokerSimulation", "UserDecisionSimulation")
     sim_env_dict["PreferredOperatorSimulation"] = ("src.BrokerSimulation", "PreferredOperatorSimulation")
+    sim_env_dict["SUMOcontrolledSim"] = ("src.SUMOcontrolledSim", "SUMOcontrolledSim") ## Should not be here
     # add development content
     if dev_content is not None:
         dev_sim_env_dict = dev_content.add_dev_simulation_environments()
@@ -62,6 +63,8 @@ def get_src_routing_engines():
     re_dict["NetworkBasicCpp"] = ("src.routing.NetworkBasicCpp", "NetworkBasicCpp")
     re_dict["NetworkPartialPreprocessedCpp"] = ("src.routing.NetworkPartialPreprocessedCpp", "NetworkPartialPreprocessedCpp")
     re_dict["NetworkTTMatrix"] = ("src.routing.NetworkTTMatrix", "NetworkTTMatrix")
+    re_dict["NetworkBasicSumoCoupling"] = ("src.routing.NetworkBasicSumoCoupling", "NetworkBasicSumoCoupling")
+    re_dict["NetworkBasicWithStoreCppSumoCoupling"] = ("src.routing.NetworkBasicWithStoreCppSumoCoupling", "NetworkBasicWithStoreCppSumoCoupling")
     # add development content
     if dev_content is not None:
         dev_re_dict = dev_content.add_dev_routing_engines()
@@ -186,7 +189,7 @@ def load_simulation_environment(scenario_parameters) -> FleetSimulationBase:
     sim_env_dict = get_src_simulation_environments()
     # load simulation environment instance
     sim_env_class = load_module(sim_env_dict, sim_env_str, "Simulation environment")
-    return sim_env_class(scenario_parameters)
+    return sim_env_class(scenario_parameters) 
 
 
 def load_routing_engine(network_type, network_dir, network_dynamics_file_name=None) -> NetworkBase:
