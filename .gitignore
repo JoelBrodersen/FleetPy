@@ -27,6 +27,8 @@ data/pubtrans/*
 data/zones/*
 !data/zones/example_zones
 !data/infra/example_infra
+**/results/*
+
 
 # study directories except for example
 #studies/*
