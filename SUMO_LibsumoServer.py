@@ -22,6 +22,7 @@ from src.misc.init_modules import load_simulation_environment
 import src.misc.config as config
 from src.misc.globals import *
 import src.evaluation.standard as eval
+import traci._simulation
 import traci.constants as tc
 
 
@@ -219,8 +220,13 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
     '''This functions reads a dict of routes with vehicleIDs as strings (key) and a list of edg (value) and sets the taxi routes accordingly ->(vehicleID, [e1,e2,e3])
     :param vehicle_ids:  list string of sumo vehicle ids
     :return: None'''
+    print(traci.simulation.getTime())
     # Receive new routes from FleetPy
-    route_dict = fleetsim.get_new_vehicle_routes(sim_time)
+    route_dict = fleetsim.get_new_vehicle_routes(sim_time) ## gets new
+    #print(initializedVehicles)
+    #print(route_dict)
+    #print("vehicles in Simulation:",traci.vehicle.getIDList())
+   #breakpoint()
     arrivedVehicles = []
     for opid_vid_tuple in route_dict.keys():
         sumo_vid = fleetpy_v_id_to_sumo_v_id(opid_vid_tuple)
@@ -245,16 +251,21 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
 
         # If route only consisted of internal edges, it would not be a sumoRoute
         LOG.debug(f'vehicle {str(sumo_vid)} should get sumoRoute {sumoRoute} which is FleetPy route {route}')
-        
+        #print(f'vehicle {str(sumo_vid)} should get sumoRoute {sumoRoute} which is FleetPy route {route}')
+
         if len(sumoRoute) > 0:
             traci.route.add(route_name, sumoRoute)  # TODO does this lead to an infinite amount of routes in long simulations?
             #Check if vehicle is currently in the simulation
+            print(sumo_vid,sumoRoute)
             if sumo_vid in initializedVehicles:
                 # 1 A) Vehicle is Loaded during this time step for SUMO-Simulation 
                 if sumo_vid in traci.simulation.getLoadedIDList():
                     edgeID = traci.vehicle.getRoadID(sumo_vid)
                     currentRoute = traci.vehicle.getRoute(sumo_vid)
+                    
                     if sumoRoute != currentRoute:
+                        print(sumo_vid, "SUMO Route not equivalent to FP-Route")
+                        breakpoint()
                         if sumoRoute[0] == edgeID:# Check if current edgeID is the first element of the sumoRoute
                             is_valid_route = True
                             try:
@@ -311,14 +322,20 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
                         pass 
                 # 1 C) Vehicle initialized but not in simulation
                 else:
-                    try:
+                    try:    
                         traci.vehicle.setRoute(sumo_vid,sumoRoute)
+                        print(sumo_vid, "set Route")
+                        print(initializedVehicles)
                     except:
                         try:
                             LOG.debug(f"Vehicle {sumo_vid}has been initialized but is not in the network")#Occured 795 times
                             traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=opvid_to_veh_type[opid_vid_tuple])
+                            print(sumo_vid, "addFull")
+                            print(sumo_vid in traci.vehicle.getIDList())
                         except:
                             LOG.debug(f"Vehicle {sumo_vid}, is not loaded, not in the network and couldn't be added")
+                            print(f"Vehicle {sumo_vid}, is not loaded, not in the network and couldn't be added")
+                            breakpoint()
                             try:
                                 LOG.info(f"try rerouting")
                                 traci.vehicle.changeTarget(sumo_vid, sumoRoute[-1])
@@ -327,17 +344,16 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
                             except:
                                 LOG.warning(f"Vehicle {sumo_vid} could not be rerouted (3)")
                         pass
-                    #LOG.debug(f"Vehicle {str(vid)} had been initialized and is being readded")
-                    #traci.vehicle.remove(str(vid))
-                    #traci.vehicle.add(vehID=str(vid), routeID=route_name, typeID="drt")
-                    #edgeID = traci.vehicle.getRoadID(str(vid))
-                    #traci.vehicle.setRoute(str(vid),sumoRoute)
-                    #if traci.vehicle.isRouteValid(str(vid)) is False:
-                    #LOG.warning(f'Route of {str(vid)} is not valid')
+
+
             # 2) Vehicle is not in the simulation, but it should be possible to add it.        
             else: 
                 try:
+                    
                     traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=opvid_to_veh_type[opid_vid_tuple])
+                    print("Loaded vehicles:",traci.simulation.getLoadedIDList())
+                    print(f"Added Vehicle to SUMO: {sumo_vid},{route_name},{opvid_to_veh_type[opid_vid_tuple]}")
+                    #breakpoint()
                     if traci.vehicle.isRouteValid(sumo_vid) is False:
                         LOG.warning(f'Route of {sumo_vid} is not valid')
                     initializedVehicles.append(sumo_vid)
@@ -537,7 +553,7 @@ def run_simulation(fleetsim : SUMOcontrolledSim, sumo_edge_id_to_fs_edge, fs_edg
         if sim_time != last_time: # avoid same time step again due to rounding
             leg_status_dict = fleetsim.step(sim_time) # fleetpy timestep and computing new routes
             last_time = sim_time
-        if sim_time % 60 == 0:
+        if sim_time % 120 == 0:
             print("{}: current simtime: {}/{}".format(fleetsim.scenario_parameters[G_SCENARIO_NAME], sim_time, end_time))
 
         #if sim_time%60==0:
