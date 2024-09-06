@@ -29,7 +29,6 @@ data/zones/*
 !data/infra/example_infra
 **/results/*
 
-
 # study directories except for example
 #studies/*
 #!studies/example_study

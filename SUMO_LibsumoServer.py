@@ -131,7 +131,7 @@ def setup_traci(sumo_config, results_path, sumoBinary, seed,start_time, sumo_fcd
     additional_file = os.path.join(results_path, "SumoDumps", "additional.xml")
     sumo_cnfg_path = os.path.dirname(sumo_config)
     sumoCmd = [sumoBinary, "-c", sumo_config ,"--collision.action","warn","--begin",str(start_time),
-               "--step-length","1","--time-to-teleport","300","--tripinfo-output",TripInfoPath,
+               "--step-length","1","--tripinfo-output",TripInfoPath,
                "--vehroute-output",vehRoutePath,"--vehroute-output.exit-times","--vehroute-output.incomplete","--collision-output",collisionPath,"--statistic-output",statisticsPath,"--start", "--seed", str(seed)]
     fcdPath = os.path.join(results_path, "SumoDumps", "fcd-output.xml")
     if sumo_fcd_output:
@@ -220,15 +220,12 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
     '''This functions reads a dict of routes with vehicleIDs as strings (key) and a list of edg (value) and sets the taxi routes accordingly ->(vehicleID, [e1,e2,e3])
     :param vehicle_ids:  list string of sumo vehicle ids
     :return: None'''
-    print(traci.simulation.getTime())
     # Receive new routes from FleetPy
-    route_dict = fleetsim.get_new_vehicle_routes(sim_time) ## gets new
-    #print(initializedVehicles)
-    #print(route_dict)
-    #print("vehicles in Simulation:",traci.vehicle.getIDList())
-   #breakpoint()
+    route_dict = fleetsim.get_new_vehicle_routes(sim_time) ## Gets new Routes (Leg by Leg from FP) {(op,veh_no):[n1,n2,...],...}
+         
     arrivedVehicles = []
     for opid_vid_tuple in route_dict.keys():
+        veh_obj = fleetsim.sim_vehicles[opid_vid_tuple]
         sumo_vid = fleetpy_v_id_to_sumo_v_id(opid_vid_tuple)
         route = route_dict[opid_vid_tuple]       
         sumoRoute = []
@@ -246,120 +243,68 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
                 except KeyError:
                     LOG.warning(f'There is a KeyError in the Route which is {o_node} -> {d_node} : {route}')#No occurence
                     continue
+        LOG.debug(f"New Route from FleetPy {opid_vid_tuple} {route} --> {sumo_vid} {sumoRoute}")
         route_name = "Route_"+str(sumo_vid)+"_"+str(sim_time) 
-        
-
         # If route only consisted of internal edges, it would not be a sumoRoute
-        LOG.debug(f'vehicle {str(sumo_vid)} should get sumoRoute {sumoRoute} which is FleetPy route {route}')
-        #print(f'vehicle {str(sumo_vid)} should get sumoRoute {sumoRoute} which is FleetPy route {route}')
 
         if len(sumoRoute) > 0:
             traci.route.add(route_name, sumoRoute)  # TODO does this lead to an infinite amount of routes in long simulations?
-            #Check if vehicle is currently in the simulation
-            print(sumo_vid,sumoRoute)
-            if sumo_vid in initializedVehicles:
-                # 1 A) Vehicle is Loaded during this time step for SUMO-Simulation 
-                if sumo_vid in traci.simulation.getLoadedIDList():
-                    edgeID = traci.vehicle.getRoadID(sumo_vid)
-                    currentRoute = traci.vehicle.getRoute(sumo_vid)
-                    
-                    if sumoRoute != currentRoute:
-                        print(sumo_vid, "SUMO Route not equivalent to FP-Route")
-                        breakpoint()
-                        if sumoRoute[0] == edgeID:# Check if current edgeID is the first element of the sumoRoute
-                            is_valid_route = True
-                            try:
-                                traci.vehicle.setRoute(sumo_vid,sumoRoute)
-                                if traci.vehicle.isRouteValid(sumo_vid) is False:
-                                    LOG.warning(f'Route of {sumo_vid} is not valid') # No occurence
-                                    is_valid_route = False
-                            except:
-                                LOG.warning(f'Route of {sumo_vid} could not be set 1: {sumoRoute}')
-                                is_valid_route = False
-                            if not is_valid_route:
-                                LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumoRoute}")
-                                LOG.info("Use SUMO rerouter")
-                                try:
-                                    traci.vehicle.changeTarget(sumo_vid, sumoRoute[-1])
-                                    traci.vehicle.rerouteTraveltime(sumo_vid)
-                                    LOG.info(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
-                                except:
-                                    LOG.warning(f"Vehicle {sumo_vid} could not be rerouted")
-                    elif sumoRoute == currentRoute:
-                        LOG.debug(f"Vehicle {sumo_vid} is Loaded and SumoRoute {sumoRoute} is current Route {currentRoute}")
-                        pass        
-                    else: #If current edgeID is not the first element look into it. 
-                        LOG.debug(f'No new route is set for: {sumo_vid}')
-                        LOG.debug(f'newRoute: {traci.vehicle.getRoute(sumo_vid)}')
-                        LOG.debug(f'Current route {traci.vehicle.getRoute(sumo_vid)}')
-                        LOG.debug(f'Vid: {sumo_vid}, Is in initialized Vehicles: {sumo_vid in initializedVehicles}, RoadID {traci.vehicle.getRoadID(sumo_vid)}, SumoRoute {sumoRoute}')
-                # 1 B) Vehicle is already in Simulation
-                elif sumo_vid in traci.vehicle.getIDList():
-                    edgeID = traci.vehicle.getRoadID(sumo_vid)
-                    currentRoute = traci.vehicle.getRoute(sumo_vid)
-                    if sumoRoute != currentRoute:
-                        if sumoRoute[0] == edgeID:# Check if current edgeID is the first element of the sumoRoute
-                            is_valid_route = True
-                            try:
-                                traci.vehicle.setRoute(sumo_vid,sumoRoute)
-                                if traci.vehicle.isRouteValid(sumo_vid) is False:
-                                    LOG.warning(f'Route of {sumo_vid} is not valid') # No occurence
-                                    is_valid_route = False
-                            except:
-                                LOG.warning(f'Route of {sumo_vid} could not be set 2: {sumoRoute}')
-                                is_valid_route = False
-                            if not is_valid_route:
-                                LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumoRoute}")
-                                LOG.info("Use SUMO rerouter")
-                                try:
-                                    traci.vehicle.changeTarget(sumo_vid, sumoRoute[-1])
-                                    traci.vehicle.rerouteTraveltime(sumo_vid)
-                                    LOG.info(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
-                                except:
-                                    LOG.warning(f"Vehicle {sumo_vid} could not be rerouted")
-                    elif sumoRoute == currentRoute:
-                        LOG.debug(f"Vehicle {sumo_vid} is Loaded and in Network and SumoRoute {sumoRoute} is current Route {currentRoute}")
-                        pass 
-                # 1 C) Vehicle initialized but not in simulation
-                else:
-                    try:    
-                        traci.vehicle.setRoute(sumo_vid,sumoRoute)
-                        print(sumo_vid, "set Route")
-                        print(initializedVehicles)
-                    except:
+
+            # A) Vehicle is already in Simulation
+            if sumo_vid in traci.vehicle.getIDList():
+                edgeID = traci.vehicle.getRoadID(sumo_vid)
+                currentRoute = traci.vehicle.getRoute(sumo_vid)
+                if sumoRoute != currentRoute: ## Route needs to be updated because of an new order of fleetpy/teleport
+                    if sumoRoute[0] == edgeID:# Check if current edgeID is the first element of the sumoRoute
+                        is_valid_route = True
                         try:
-                            LOG.debug(f"Vehicle {sumo_vid}has been initialized but is not in the network")#Occured 795 times
-                            traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=opvid_to_veh_type[opid_vid_tuple])
-                            print(sumo_vid, "addFull")
-                            print(sumo_vid in traci.vehicle.getIDList())
+                            traci.vehicle.setRoute(sumo_vid,sumoRoute)
+                            traci.vehicle.setParameter(objID=sumo_vid,param="cleg_dest",value=sumoRoute[-1])
+                            traci.vehicle.setParameter(objID=sumo_vid,param="cleg",value=sumoRoute)
+                            if traci.vehicle.isRouteValid(sumo_vid) is False:
+                                LOG.warning(f'Route of {sumo_vid} is not valid') # No occurence
+                                is_valid_route = False
                         except:
-                            LOG.debug(f"Vehicle {sumo_vid}, is not loaded, not in the network and couldn't be added")
-                            print(f"Vehicle {sumo_vid}, is not loaded, not in the network and couldn't be added")
-                            breakpoint()
+                            LOG.warning(f'Route of {sumo_vid} could not be set 2: {sumoRoute}')
+                            is_valid_route = False
+                        if not is_valid_route:
+                            LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumoRoute}")
+                            LOG.info("Use SUMO rerouter")
                             try:
-                                LOG.info(f"try rerouting")
                                 traci.vehicle.changeTarget(sumo_vid, sumoRoute[-1])
                                 traci.vehicle.rerouteTraveltime(sumo_vid)
                                 LOG.info(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
                             except:
-                                LOG.warning(f"Vehicle {sumo_vid} could not be rerouted (3)")
-                        pass
+                                LOG.warning(f"Vehicle {sumo_vid} could not be rerouted")
+                    elif sumoRoute == currentRoute:
+                        LOG.debug(f"Vehicle {sumo_vid} is Loaded and in Network and SumoRoute {sumoRoute} is current Route {currentRoute}")
+                        pass 
 
-
-            # 2) Vehicle is not in the simulation, but it should be possible to add it.        
+            # B) Vehicle is not in the simulation, but already loaded and waiting to be inserted (pending)
+            elif sumo_vid not in traci.vehicle.getIDList() and sumo_vid in traci.simulation.getPendingVehicles():
+                 LOG.debug(f"{sumo_vid} has to wait to get inserted")          
+            
+            # C) First Try to Load Vehicle and insert it in the simulation    
             else: 
                 try:
-                    
                     traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=opvid_to_veh_type[opid_vid_tuple])
-                    print("Loaded vehicles:",traci.simulation.getLoadedIDList())
-                    print(f"Added Vehicle to SUMO: {sumo_vid},{route_name},{opvid_to_veh_type[opid_vid_tuple]}")
+                    traci.vehicle.setParameter(objID=sumo_vid,param="Num_PAX",value=len([rq.get_rid_struct() for rq in veh_obj.pax]))
+                    traci.vehicle.setParameter(objID=sumo_vid,param="PAX",value=[rq.get_rid_struct() for rq in veh_obj.pax])
+                    traci.vehicle.setParameter(objID=sumo_vid,param="cleg_dest",value=sumoRoute[-1])
+                    traci.vehicle.setParameter(objID=sumo_vid,param="cleg",value=sumoRoute)
+
+                    LOG.debug(f"Inserted Vehicle to SUMO: {sumo_vid},{route_name},{opvid_to_veh_type[opid_vid_tuple]}")
                     #breakpoint()
                     if traci.vehicle.isRouteValid(sumo_vid) is False:
                         LOG.warning(f'Route of {sumo_vid} is not valid')
-                    initializedVehicles.append(sumo_vid)
+            
                 except:
-                    LOG.debug(f'Vehicle {sumo_vid} could not be added')#No occurence
-                    pass
+                        LOG.debug(f'Vehicle {sumo_vid} could not be added')#No occurence
+                        print(f'Vehicle {sumo_vid} could not be added')
+                        print(traci.simulation.getLoadedIDList())
+                        breakpoint()
+                        pass
+            
         else:   #If the route is only internal vehicles that have been initialized are immediately considered to be "arrived", if not they are added at a "HelpRoute" first. 
                 #This should only happen very early in the Simulation and not within the evaluation time
             try:
@@ -376,6 +321,12 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
                         LOG.debug(f"Error is thrown here")
             except:
                 LOG.debug("Something went wrong while adding the route in traci")#6 Occurences
+
+    #print("FP-Vehicles Currently running:")
+    #for sumo_vehicle in traci.vehicle.getIDList():
+        #if sumo_vehicle.split(sep="_")[0]=="fp":
+            #print(f"{sumo_vehicle} at {traci.vehicle.getRoadID(sumo_vehicle)}, Route: {traci.vehicle.getRoute(sumo_vehicle)}")
+
     LOG.debug(f"initialized Vehciles {initializedVehicles}")
     return arrivedVehicles, initializedVehicles
 

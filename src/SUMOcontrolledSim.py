@@ -10,6 +10,7 @@ from abc import abstractmethod, ABCMeta
 import pathlib
 import sys
 
+
 # additional module imports (> requirements)
 # ------------------------------------------
 # from IPython import embed
@@ -20,7 +21,6 @@ from src.FleetSimulationBase import FleetSimulationBase
 from src.fleetctrl.FleetControlBase import FleetControlBase
 from src.simulation.Vehicles import ExternallyMovingSimulationVehicle
 from src.misc.init_modules import load_fleet_control_module
-
 # -------------------------------------------------------------------------------------------------------------------- #
 # global variables
 # ----------------
@@ -83,6 +83,7 @@ class SUMOcontrolledSim(FleetSimulationBase):
         :param sim_time: new simulation time
         :return: None
         """
+        LOG.debug(f"--------- Current time: {sim_time} ---------")
         # 1) update fleets and network
         leg_status_dict = self.update_sim_state_fleets(sim_time - self.time_step, sim_time)
         new_travel_times = self.routing_engine.update_network(sim_time)
@@ -218,7 +219,7 @@ class SUMOcontrolledSim(FleetSimulationBase):
                 LOG.debug(f"force_update_plan {force_update_plan}")#Always False
             
             #leg_status = veh_obj[1]
-            LOG.debug(f"vehivle object {veh_obj} leg status: {veh_obj.status} position = {veh_obj.pos}")
+            LOG.debug(f"vehicle object {veh_obj} leg status: {veh_obj.status} position = {veh_obj.pos}")
             leg_status_dict[opid_vid_tuple] = (veh_obj.status, veh_obj.pos)
         LOG.debug(f"leg_status_dict{leg_status_dict}")
         return leg_status_dict
@@ -261,6 +262,8 @@ class SUMOcontrolledSim(FleetSimulationBase):
                 if a vehicle has to stop moving, an empty list is returned '''
         return_dict = {}
         for opid_vid_tuple, veh_obj in self.sim_vehicles.items():
+            #print(veh_obj.vid,veh_obj.pos,veh_obj.status, veh_obj.cl_remaining_time,[rq.get_rid_struct() for rq in veh_obj.pax])
+            #print([str(leg_obj) for leg_obj in veh_obj.assigned_route])
             new_route = veh_obj.get_new_route()      
             if new_route is not None:
                 return_dict[opid_vid_tuple] = new_route
@@ -285,9 +288,9 @@ class SUMOcontrolledSim(FleetSimulationBase):
         #    op.inform_network_travel_time_update(sim_time)  # TODO # this wont work for multiprocessing!
 
     def vehicles_reached_destination(self, simulation_time, vids_reached_destination):
-        """ this function is triggered if fleet vehicles in aimsun reached its destination;
+        """ this function is triggered if fleet vehicles in SUMO reached its destination;
         updates vehicle states, triggers start of boarding processes, adds information to stats
-        :param simulation_time: int time of simulation from aimsun
+        :param simulation_time: int time of simulation from SUMO
         :param vids_reached_destination: list of (opid, vid)"""
         LOG.debug("vehicles reached destination")
         LOG.debug(f"simulation_time {simulation_time}")
@@ -298,5 +301,4 @@ class SUMOcontrolledSim(FleetSimulationBase):
             veh_obj = self.sim_vehicles[opid_vid]
             LOG.debug(f"veh {veh_obj} reached destination")
             veh_obj.reached_destination(simulation_time)
-            print(f"veh {veh_obj} reached destination")
         return  
