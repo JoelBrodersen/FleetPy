@@ -16,6 +16,8 @@ from src.routing.NetworkBasic import Edge as BasicEdge
 from src.routing.NetworkBasic import Node as BasicNode
 
 from src.routing.cpp_router.PyNetwork import PyNetwork
+from src.routing.routing_imports.RouterReliability import RouterReliability
+from src.routing.routing_imports.Router import Router
 
 # -------------------------------------------------------------------------------------------------------------------- #
 # global variables
@@ -36,6 +38,8 @@ INPUT_PARAMETERS_NetworkBasicReliability = {
 def read_node_line(columns):
     return Node(int(columns["node_index"]), int(columns["is_stop_only"]), float(columns["pos_x"]), float(columns["pos_y"]))
 
+
+    
 class Node(BasicNode):
     def __init__(self, node_index, is_stop_only, pos_x, pos_y, node_order=None):
         self.node_index = node_index
@@ -114,7 +118,9 @@ class NetworkBasicReliability(NetworkBasic):
         self.sim_time = 0   # TODO #
         self.zones = None   # TODO #
         with open(os.sep.join([self.network_name_dir, "base","crs.info"]), "r") as f:
-            self.crs = f.read()    
+            self.crs = f.read()   
+        self.user_vot = None 
+        self.user_vor = None
       
     def loadNetwork(self, network_name_dir, network_dynamics_file_name=None, scenario_time=None):
         nodes_f = os.path.join(network_name_dir, "base", "nodes.csv")
@@ -131,9 +137,6 @@ class NetworkBasicReliability(NetworkBasic):
             o_node.add_next_edge_to(d_node, tmp_edge)
             d_node.add_prev_edge_from(o_node, tmp_edge)
         print("... {} nodes loaded!".format(len(self.nodes)))
-        for node in self.nodes:
-            print(node, node.travel_infos_from)
-        breakpoint()
         if scenario_time is not None:
             latest_tt = None
             if len(self.travel_time_file_folders.keys()) > 0:
@@ -149,27 +152,38 @@ class NetworkBasicReliability(NetworkBasic):
         loads new travel time files for scenario_time
         """
         self._reset_internal_attributes_after_travel_time_update()
-        f = self.travel_time_file_folders[scenario_time]
-        tt_file = os.path.join(f, "edges_td_att.csv")
-        tmp_df = pd.read_csv(tt_file)
-        print(tmp_df)
-        tmp_df.set_index(["from_node","to_node"], inplace=True)
-        for edge_index_tuple, new_tt in tmp_df["edge_tt"].iteritems():
-            self._set_edge_tt(edge_index_tuple[0], edge_index_tuple[1], new_tt)
-        
-        for edge_index_tuple, new_tt_std in tmp_df["edge_std"].iteritems():
-            self._set_edge_tt_std(edge_index_tuple[0], edge_index_tuple[1], new_tt_std)
+        f = self.travel_time_file_infos[scenario_time]
+        if self._tt_infos_from_folder:
+            tt_file = os.path.join(f, "edges_td_att.csv")
+            tmp_df = pd.read_csv(tt_file)
+            for from_node, to_node, edge_tt, edge_tt_std in zip(tmp_df['from_node'], tmp_df['to_node'], tmp_df['edge_tt'], tmp_df['edge_tt_std']):
+                self._set_edge_tt(from_node, to_node, edge_tt,edge_tt_std)
+
+    def _set_edge_tt(self, o_node_index, d_node_index, new_travel_time,new_travel_time_std):
+        o_node = self.nodes[o_node_index]
+        d_node = self.nodes[d_node_index]
+        edge_obj = o_node.edges_to[d_node]
+        edge_obj.set_tt(new_travel_time)
+        edge_obj.set_tt_std(new_travel_time_std)
+        new_tt, dis = edge_obj.get_tt_distance()
+        o_node.travel_infos_to[d_node_index] = (new_tt, dis,new_travel_time_std)
+        d_node.travel_infos_from[o_node_index] = (new_tt, dis,new_travel_time_std)
     
-    
-    def _set_edge_tt_std(self, o_node_index, d_node_index, new_travel_time_std):
-            o_node = self.nodes[o_node_index]
-            d_node = self.nodes[d_node_index]
-            edge_obj = o_node.edges_to[d_node]
-            edge_obj.set_tt_std(new_travel_time_std)
-            o_node.travel_infos_to_std[d_node_index] = new_travel_time_std
-            d_node.travel_infos_from_std[o_node_index] = new_travel_time_std
 
     def get_section_infos(self, start_node_index, end_node_index):
+        """
+        :param start_node_index_index: index of start_node of section
+        :param end_node_index: index of end_node of section
+        :return: (travel time, distance); if no section between nodes (None, None)
+        """
+        if self._current_tt_factor is None:
+            tt, dis, tt_std = self.nodes[start_node_index].get_travel_infos_to(end_node_index)
+            return tt, dis
+        else:
+            tt, dis, tt_std = self.nodes[start_node_index].get_travel_infos_to(end_node_index)
+            return (tt * self._current_tt_factor, dis)
+        
+    def get_section_infos_std(self, start_node_index, end_node_index):
         """
         :param start_node_index_index: index of start_node of section
         :param end_node_index: index of end_node of section
@@ -181,44 +195,72 @@ class NetworkBasicReliability(NetworkBasic):
             tt, dis, tt_std = self.nodes[start_node_index].get_travel_infos_to(end_node_index)
             return (tt * self._current_tt_factor, dis, tt_std)
     
-    def return_route_infos(self, route, rel_start_edge_position, start_time):
-        """
-        This method returns the information travel information along a route. The start position is given by a relative
-        value on the first edge [0,1], where 0 means that the vehicle is at the first node.
-        :param route: list of nodes
-        :param rel_start_edge_position: float [0,1] determining the start position
-        :param start_time: can be used as an offset in case the route is planned for a future time
-        :return: (arrival time, distance to travel)
-        """
-        arrival_time = start_time
-        distance = 0
-        _, start_tt, start_dis = self.get_section_overhead( (route[0], route[1], rel_start_edge_position), from_start=False)
-        arrival_time += start_tt
-        distance += start_dis
-        if len(route) > 2:
-            for i in range(2, len(route)):
-                tt, dis, _ = self.get_section_infos(route[i-1], route[i])
-                arrival_time += tt
-                distance += dis
-        return (arrival_time, distance)
 
-    def get_section_overhead(self, position, from_start=True, customized_section_cost_function=None):
-        """This method computes the section overhead for a certain position.
-
-        :param position: (current_edge_origin_node_index, current_edge_destination_node_index, relative_position)
-        :param from_start: computes already traveled travel_time and distance,
-                           if False: computes rest travel time (relative_position -> 1.0-relative_position)
-        :param customized_section_cost_function: customized routing objective function
-        :return: (cost_function_value, travel time, travel_distance)
+    def return_best_route_1to1(self, origin_position, destination_position, customized_section_cost_function = None):
         """
-        if position[1] is None:
-            return 0.0, 0.0, 0.0
-        all_travel_time, all_travel_distance, all_travel_time_std = self.get_section_infos(position[0], position[1])
-        overhead_fraction = position[2]
-        if not from_start:
-            overhead_fraction = 1.0 - overhead_fraction
-        all_travel_cost = all_travel_time
-        if customized_section_cost_function is not None:
-            pass
-            ##TODO all_travel_cost = customized_section_cost_function(all_travel_time, all_travel_distance, self.nodes[position[1]])
-        #return all_travel_cost * overhead_fraction, all_travel_time * overhead_fraction, all_travel_distance * overhead_fraction
+        This method will return the best route [list of node_indices] between two nodes,
+        while origin_position[0] and destination_postion[1](or destination_position[0] if destination_postion[1]==None) is included.
+        :param origin_position: (current_edge_origin_node_index, current_edge_destination_node_index, relative_position)
+        :param destination_position: (destination_edge_origin_node_index, destination_edge_destination_node_index, relative_position)
+        :param customized_section_cost_function: function to compute the travel cost of an section: args: (travel_time, travel_distance, current_dijkstra_node) -> cost_value
+                if None: travel_time is considered as the cost_function of a section
+        :return : route (list of node_indices) of best route
+        """
+        trivial_test = self.test_and_get_trivial_route_tt_and_dis(origin_position, destination_position)
+        if trivial_test is not None:
+            return trivial_test[0]
+        origin_node = origin_position[0]
+        destination_node = destination_position[0]
+        if origin_position[1] is not None:
+            origin_node = origin_position[1]
+        if customized_section_cost_function == None:
+            customized_section_cost_function=self.customized_section_cost_function
+        R = RouterReliability(self, origin_node, destination_nodes=[destination_node], mode='bidirectional', customized_section_cost_function=customized_section_cost_function)
+        node_list = R.compute(return_route=True)[0][0]
+        if origin_node != origin_position[0]:
+            node_list = [origin_position[0]] + node_list
+        if destination_position[1] is not None:
+            node_list.append(destination_position[1])
+        return node_list
+    
+    def return_travel_costs_1to1_reliability(self, origin_position, destination_position, customized_section_cost_function = None):
+        """
+        This method will return the travel costs of the fastest route between two nodes considering reliability.
+        :param origin_position: (current_edge_origin_node_index, current_edge_destination_node_index, relative_position)
+        :param destination_position: (destination_edge_origin_node_index, destination_edge_destination_node_index, relative_position)
+        :param customized_section_cost_function: function to compute the travel cost of an section: args: (travel_time, travel_distance, current_dijkstra_node) -> cost_value
+                if None: travel_time is considered as the cost_function of a section
+        :return: (cost_function_value, travel time, travel_distance) between the two nodes
+        """
+        trivial_test = self.test_and_get_trivial_route_tt_and_dis(origin_position, destination_position)
+        if trivial_test is not None:
+            return trivial_test[1]
+        origin_node = origin_position[0]
+        origin_overhead = (0.0, 0.0, 0.0)
+        if origin_position[1] is not None:
+            origin_node = origin_position[1]
+            origin_overhead = self.get_section_overhead(origin_position, from_start=False)
+        destination_node = destination_position[0]
+        destination_overhead = (0.0, 0.0, 0.0)
+        if destination_position[1] is not None:
+            destination_overhead = self.get_section_overhead(destination_position, from_start=True)
+        if customized_section_cost_function == None:
+            customized_section_cost_function=self.customized_section_cost_function
+        if self._current_tt_factor is None:
+            R = RouterReliability(self, origin_node, destination_nodes=[destination_node], mode='bidirectional', customized_section_cost_function=customized_section_cost_function)                    
+            s = R.compute(return_route=False)[0][1]
+        else:
+            R = Router(self, origin_node, destination_nodes=[destination_node], mode='bidirectional', customized_section_cost_function=customized_section_cost_function)
+            s = R.compute(return_route=False)[0][1]
+            s = (s[0] * self._current_tt_factor, s[1] * self._current_tt_factor, s[2])
+        res = (s[0] + origin_overhead[0] + destination_overhead[0], s[1] + origin_overhead[1] + destination_overhead[1], s[2] + origin_overhead[2] + destination_overhead[2])
+        if customized_section_cost_function is None:
+            self._add_to_database(origin_node, destination_node, s[0], s[1], s[2])
+        return res
+
+    def customized_section_cost_function(self,tt_mean,tt_std,node_index=None):
+        vor=self.user_vor
+        vot=self.user_vot
+        cfv = vot * tt_mean + vor * tt_std
+        return cfv
+    

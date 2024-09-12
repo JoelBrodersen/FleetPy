@@ -57,6 +57,11 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         self.rid_to_assigned_vid = {} # rid -> vid
         self.pos_veh_dict = {}  # pos -> list_veh
         self.vr_ctrl_f = return_pooling_objective_function(operator_attributes[G_OP_VR_CTRL_F])
+        if "vot" in operator_attributes[G_OP_VR_CTRL_F].keys():
+            self.routing_engine.user_vot = operator_attributes[G_OP_VR_CTRL_F]["vot"]
+        if "vor" in operator_attributes[G_OP_VR_CTRL_F].keys():
+            self.routing_engine.user_vor = operator_attributes[G_OP_VR_CTRL_F]["vor"]
+  
         self.sim_time = scenario_parameters[G_SIM_START_TIME]
         # others # TODO # standardize IRS assignment memory?
         self.tmp_assignment = {}  # rid -> VehiclePlan
@@ -105,19 +110,19 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
                           boarding_time=self.const_bt)
 
         rid_struct = rq.get_rid_struct()
-        self.rq_dict[rid_struct] = prq
 
-        if prq.o_pos == prq.d_pos:
+        self.rq_dict[rid_struct] = prq
+        if prq.o_pos == prq.d_pos: ##Trivial Case
             LOG.debug(f"automatic decline for rid {rid_struct}!")
             self._create_rejection(prq, sim_time)
             return
 
         o_pos, t_pu_earliest, t_pu_latest = prq.get_o_stop_info()
-        if t_pu_earliest - sim_time > self.opt_horizon:
+        if t_pu_earliest - sim_time > self.opt_horizon: #Reservation Case
             self.reservation_module.add_reservation_request(prq, sim_time)
             offer = self.reservation_module.return_immediate_reservation_offer(prq.get_rid_struct(), sim_time)
             LOG.debug(f"reservation offer for rid {rid_struct} : {offer}")
-        else:
+        else: #Insertion
             list_tuples = insertion_with_heuristics(sim_time, prq, self, force_feasible_assignment=True)
             if len(list_tuples) > 0:
                 (vid, vehplan, delta_cfv) = min(list_tuples, key=lambda x:x[2])

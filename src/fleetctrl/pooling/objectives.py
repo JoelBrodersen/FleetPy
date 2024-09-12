@@ -420,6 +420,42 @@ def return_pooling_objective_function(vr_control_func_dict:dict)->Callable[[int,
                     else:
                         assignment_reward += LARGE_INT
             return sum_dist + sum_user_wait_times - assignment_reward
+    
+    elif func_key == "user_vot_vor":
+        traveler_vot = vr_control_func_dict["vot"]
+        traveler_vor = vr_control_func_dict["vor"]
+
+        def control_f(simulation_time:float, veh_obj:SimulationVehicle, veh_plan:VehiclePlan, rq_dict:Dict[Any,PlanRequest], routing_engine:NetworkBase)->float:
+            """This function combines the total driving costs and the value of customer time.
+
+            :param simulation_time: current simulation time
+            :param veh_obj: simulation vehicle object
+            :param veh_plan: vehicle plan in question
+            :param rq_dict: rq -> Plan request dictionary
+            :param routing_engine: for routing queries
+            :return: objective function value
+            """
+            assignment_reward = len(veh_plan.pax_info) * LARGE_INT
+            # Reliability term
+            sum_std = 0
+            last_pos = veh_obj.pos
+
+            if traveler_vor > 0:
+                for ps in veh_plan.list_plan_stops:
+                    pos = ps.get_pos()
+                    if pos != last_pos:
+                        res =  routing_engine.return_travel_costs_1to1_reliability(last_pos, pos)
+                        std = (res[0]-res[1]*traveler_vot)/traveler_vor #results from cost function: C = vot*tt + vor*std
+                        sum_std += std
+                        last_pos = pos
+            # value of time term (treat waiting and in-vehicle time the same)
+            sum_user_times = 0
+            for rid, boarding_info_list in veh_plan.pax_info.items():
+                rq_time = rq_dict[rid].rq_time
+                drop_off_time = boarding_info_list[1]
+                sum_user_times += (drop_off_time - rq_time)
+            # value of travel time is scenario input (cent per second)
+            return sum_user_times * traveler_vot + sum_std * traveler_vor - assignment_reward
 
     else:
         raise IOError(f"Did not find valid request assignment control objective string."
