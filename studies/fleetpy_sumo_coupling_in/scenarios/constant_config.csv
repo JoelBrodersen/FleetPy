@@ -1,4 +1,5 @@
 Input_Parameter_Name,Parameter_Value
+sim_env,SUMOcontrolledSim
 ##1,FleetSimulation
 initial_state_scenario,
 demand_name,

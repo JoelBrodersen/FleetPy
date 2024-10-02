@@ -1,0 +1,10 @@
+simulation_index,SAV_demand_ratio,vot,vor,fleet_size,network_name,vehtype,objective_function,G_EVAL_INT_START,G_EVAL_INT_END,random_seed,start_time,end_time,op_module,simulation_network,network_type,sim_env
+5,0.02,1,0,150,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+6,0.02,1,1,150,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+7,0.02,1,2,150,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+8,0.1,1,0,750,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+9,0.1,1,1,750,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+10,0.1,1,2,750,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+11,0.2,1,0,1500,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+12,0.2,1,1,1500,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
+13,0.2,1,2,1500,sumo_in_tt_sim_veh_spec,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim
