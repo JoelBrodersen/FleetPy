@@ -66,6 +66,9 @@ def get_src_routing_engines():
     re_dict["NetworkBasicSumoCoupling"] = ("src.routing.NetworkBasicSumoCoupling", "NetworkBasicSumoCoupling")
     re_dict["NetworkBasicWithStoreCppSumoCoupling"] = ("src.routing.NetworkBasicWithStoreCppSumoCoupling", "NetworkBasicWithStoreCppSumoCoupling")
     re_dict["NetworkBasicReliability"] = ("src.routing.NetworkBasicReliability", "NetworkBasicReliability")
+    re_dict["NetworkBasicReliabilityWithStore"] = ("src.routing.NetworkBasicReliabilityWithStore", "NetworkBasicReliabilityWithStore")
+    re_dict["NetworkBasicReliabilitySumoCoupling"] = ("src.routing.NetworkBasicReliabilitySumoCoupling", "NetworkBasicReliabilitySumoCoupling")
+
     # add development content
     if dev_content is not None:
         dev_re_dict = dev_content.add_dev_routing_engines()
@@ -190,6 +193,7 @@ def load_simulation_environment(scenario_parameters) -> FleetSimulationBase:
     sim_env_dict = get_src_simulation_environments()
     # load simulation environment instance
     sim_env_class = load_module(sim_env_dict, sim_env_str, "Simulation environment")
+    print(sim_env_class(scenario_parameters))
     return sim_env_class(scenario_parameters) 
 
 

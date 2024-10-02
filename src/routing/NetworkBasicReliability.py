@@ -133,7 +133,11 @@ class NetworkBasicReliability(NetworkBasic):
         for _, row in edges_df.iterrows():
             o_node = self.nodes[row[G_EDGE_FROM]]
             d_node = self.nodes[row[G_EDGE_TO]]
-            tmp_edge = Edge(edge_index=(o_node, d_node), distance=row[G_EDGE_DIST], travel_time= row[G_EDGE_TT],travel_time_std= row[G_EDGE_TT_STD])
+            if G_EDGE_TT_STD in row.keys():
+                travel_time_std = row[G_EDGE_TT_STD]
+            else:
+                travel_time_std = 0
+            tmp_edge = Edge(edge_index=(o_node, d_node), distance=row[G_EDGE_DIST], travel_time= row[G_EDGE_TT],travel_time_std=travel_time_std)
             o_node.add_next_edge_to(d_node, tmp_edge)
             d_node.add_prev_edge_from(o_node, tmp_edge)
         print("... {} nodes loaded!".format(len(self.nodes)))
@@ -156,7 +160,7 @@ class NetworkBasicReliability(NetworkBasic):
         if self._tt_infos_from_folder:
             tt_file = os.path.join(f, "edges_td_att.csv")
             tmp_df = pd.read_csv(tt_file)
-            for from_node, to_node, edge_tt, edge_tt_std in zip(tmp_df['from_node'], tmp_df['to_node'], tmp_df['edge_tt'], tmp_df['edge_tt_std']):
+            for from_node, to_node, edge_tt, edge_tt_std in zip(tmp_df[G_EDGE_FROM], tmp_df[G_EDGE_TO], tmp_df['edge_tt'], tmp_df[G_EDGE_TT_STD]):
                 self._set_edge_tt(from_node, to_node, edge_tt,edge_tt_std)
 
     def _set_edge_tt(self, o_node_index, d_node_index, new_travel_time,new_travel_time_std):

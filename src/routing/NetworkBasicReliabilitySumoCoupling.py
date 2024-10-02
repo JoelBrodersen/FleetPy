@@ -11,7 +11,14 @@ import numpy as np
 
 # src imports
 # -----------
-from src.routing.NetworkBasicWithStore import NetworkBasicWithStore
+from src.routing.NetworkBasic import NetworkBasic
+from src.routing.NetworkBasicReliabilityWithStore import NetworkBasicReliabilityWithStore
+
+from src.routing.NetworkBasic import Edge as BasicEdge
+from src.routing.NetworkBasic import Node as BasicNode
+
+from src.routing.cpp_router.PyNetwork import PyNetwork
+from src.routing.routing_imports.RouterReliability import RouterReliability
 from src.routing.routing_imports.Router import Router
 
 # -------------------------------------------------------------------------------------------------------------------- #
@@ -20,7 +27,9 @@ from src.routing.routing_imports.Router import Router
 from src.misc.globals import *
 LOG = logging.getLogger(__name__)
 
-class NetworkBasicSumoCoupling(NetworkBasicWithStore):
+
+
+class NetworkBasicReliabilitySumoCoupling(NetworkBasicReliabilityWithStore):
     """ this network is used for an external coupling with SUMO
     the only difference is the implementation of the method "external_update_edge_travel_times"
     to update travel times based on external input
@@ -31,11 +40,5 @@ class NetworkBasicSumoCoupling(NetworkBasicWithStore):
         :param new_travel_time_dict: dict edge_id (o_node, d_node) -> edge_traveltime [s]
         :return None'''
         self._reset_internal_attributes_after_travel_time_update()
-        for edge_index_tuple, new_tt in new_travel_time_dict.items():
-            if type(new_tt) != float or type(new_tt) != int:
-                new_tt = new_tt[0]
-            o_node = self.nodes[edge_index_tuple[0]]      
-            d_node = self.nodes[edge_index_tuple[1]]
-            self._set_edge_tt(edge_index_tuple[0], edge_index_tuple[1], new_tt) 
-    
-    
+        for (o_node,d_node), (new_tt,new_tt_std) in new_travel_time_dict.items():
+            self._set_edge_tt(o_node, d_node, new_tt, new_tt_std) 
