@@ -86,7 +86,7 @@ def setup_fleetsimulation(constant_config_file, scenario_file, n_cpu_per_sim=1, 
     # read constant and scenario config files
     constant_cfg = config.ConstantConfig(constant_config_file)
     scenario_cfgs = config.ScenarioConfig(scenario_file)
-
+ 
     # set constant parameters from function arguments
     const_abs = os.path.abspath(constant_config_file)
     study_name = os.path.basename(os.path.dirname(os.path.dirname(const_abs)))
@@ -249,9 +249,8 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
 
         if len(sumoRoute) > 0:
             traci.route.add(route_name, sumoRoute)  # TODO does this lead to an infinite amount of routes in long simulations?
-
-            # A) Vehicle is already in Simulation
-            if sumo_vid in traci.vehicle.getIDList():
+            # A) Vehicle is already in Simulation or currently teleporting
+            if sumo_vid in traci.vehicle.getIDList() or sumo_vid in traci.vehicle.getTeleportingIDList():
                 edgeID = traci.vehicle.getRoadID(sumo_vid)
                 currentRoute = traci.vehicle.getRoute(sumo_vid)
                 if sumoRoute != currentRoute: ## Route needs to be updated because of an new order of fleetpy/teleport
@@ -282,29 +281,46 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
 
             # B) Vehicle is not in the simulation, but already loaded and waiting to be inserted (pending)
             elif sumo_vid not in traci.vehicle.getIDList() and sumo_vid in traci.simulation.getPendingVehicles():
-                 LOG.debug(f"{sumo_vid} has to wait to get inserted")          
+                 LOG.debug(f"{sumo_vid} has to wait to get inserted") 
+
             
             # C) First Try to Load Vehicle and insert it in the simulation    
             else: 
-                try:
-                    traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=opvid_to_veh_type[opid_vid_tuple])
-                    traci.vehicle.setParameter(objID=sumo_vid,param="Num_PAX",value=len([rq.get_rid_struct() for rq in veh_obj.pax]))
-                    traci.vehicle.setParameter(objID=sumo_vid,param="PAX",value=[rq.get_rid_struct() for rq in veh_obj.pax])
-                    traci.vehicle.setParameter(objID=sumo_vid,param="cleg_dest",value=sumoRoute[-1])
-                    traci.vehicle.setParameter(objID=sumo_vid,param="cleg",value=sumoRoute)
+                if sumoBinary == "sumo":
+                    try:
+                        traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=opvid_to_veh_type[opid_vid_tuple])   
+                    except:
+                            LOG.debug(f'Vehicle {sumo_vid} could not be added')#No occurence
+                            print(f'Vehicle {sumo_vid} could not be added')
+                            print(traci.simulation.getLoadedIDList())
+                            print(traci.simulation.getEndingTeleportIDList())
+                            print(traci.simulation.getStartingTeleportIDList())
+                            print(traci.vehicle.getTeleportingIDList())
+                            print(sumo_vid in traci.vehicle.getIDList())
+                            breakpoint()
+                            pass 
+                elif sumoBinary == "sumo-gui":
+                
+                    try:
+                        traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=opvid_to_veh_type[opid_vid_tuple])
+                        traci.vehicle.setParameter(objID=sumo_vid,param="Num_PAX",value=len([rq.get_rid_struct() for rq in veh_obj.pax]))
+                        traci.vehicle.setParameter(objID=sumo_vid,param="PAX",value=[rq.get_rid_struct() for rq in veh_obj.pax])
+                        traci.vehicle.setParameter(objID=sumo_vid,param="cleg_dest",value=sumoRoute[-1])
+                        traci.vehicle.setParameter(objID=sumo_vid,param="cleg",value=sumoRoute)
 
-                    LOG.debug(f"Inserted Vehicle to SUMO: {sumo_vid},{route_name},{opvid_to_veh_type[opid_vid_tuple]}")
-                    #breakpoint()
-                    if traci.vehicle.isRouteValid(sumo_vid) is False:
-                        LOG.warning(f'Route of {sumo_vid} is not valid')
-            
-                except:
-                        LOG.debug(f'Vehicle {sumo_vid} could not be added')#No occurence
-                        print(f'Vehicle {sumo_vid} could not be added')
-                        print(traci.simulation.getLoadedIDList())
-                        breakpoint()
-                        pass
-            
+                        LOG.debug(f"Inserted Vehicle to SUMO: {sumo_vid},{route_name},{opvid_to_veh_type[opid_vid_tuple]}")
+                        #breakpoint()
+                        if traci.vehicle.isRouteValid(sumo_vid) is False:
+                            LOG.warning(f'Route of {sumo_vid} is not valid')
+                
+                    except:
+                            LOG.debug(f'Vehicle {sumo_vid} could not be added')#No occurence
+                            print(f'Vehicle {sumo_vid} could not be added')
+                            print(traci.simulation.getLoadedIDList())
+                            breakpoint()
+                            pass
+            if sumo_vid in traci.simulation.getEndingTeleportIDList():
+                LOG.warning(f"SUMO-vehicle  {sumo_vid} ended to teleport in this timestep")
         else:   #If the route is only internal vehicles that have been initialized are immediately considered to be "arrived", if not they are added at a "HelpRoute" first. 
                 #This should only happen very early in the Simulation and not within the evaluation time
             try:
@@ -597,6 +613,8 @@ def setup_and_run_sumo_simulation(constant_config, scenario_config, sumo_config,
     start_time = time.time()
 
     # start FleetPy
+    print(constant_config)
+    print(scenario_config)
     FleetPy = setup_fleetsimulation(constant_config, scenario_config, log_level=log_level)
     resultsPath = FleetPy.dir_names[G_DIR_OUTPUT]
     seed = FleetPy.scenario_parameters[G_RANDOM_SEED]

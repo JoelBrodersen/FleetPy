@@ -32,7 +32,8 @@ data/zones/*
 # study directories except for example
 #studies/*
 #!studies/example_study
-#studies/example_study/results/*
+studies/fleetpy_sumo_coupling_in/scenarios/*
+studies/fleetpy_sumo_coupling/*
 
 # system dependent C++ Router files
 src/routing/cpp_router/*.pyd
