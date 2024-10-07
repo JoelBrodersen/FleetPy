@@ -1,4 +1,4 @@
-from_node,to_node,edge_tt,distance,edge_tt_std
+from_node,to_node,edge_tt,distance,edge_std
 0,1,10,74.67,4
 2,3,5.786,80.37,4
 4,5,5.376,74.67,40

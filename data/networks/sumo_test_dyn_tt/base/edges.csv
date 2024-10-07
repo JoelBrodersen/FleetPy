@@ -1,4 +1,4 @@
-from_node,to_node,source_edge_id,number_of_usable_lanes,travel_time,distance,connecting_edges,travel_time_std
+from_node,to_node,source_edge_id,number_of_usable_lanes,travel_time,distance,connecting_edges,edge_std
 0,1,-E0,2,5.376,74.67,,2
 2,3,-E1,1,5.786,80.37,,2
 4,5,-E2,1,5.376,74.67,,20

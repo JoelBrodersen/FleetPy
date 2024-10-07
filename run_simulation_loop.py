@@ -3,12 +3,13 @@ import pathlib
 import subprocess
 import multiprocessing
 import os
+import re
 
 py_path = pathlib.Path(__file__)
 
-SELECTED_SCENARIOS =[10,11]
+SELECTED_SCENARIOS =[8,9,12,13]
 STUDY_NAME = "fleetpy_sumo_coupling_in"
-PROCESS_COUNT =2
+PROCESS_COUNT = 4
 SIM_NETWORK_NAME = "sumo_in"
 
 def get_current_max_key(FP_path):
@@ -48,8 +49,8 @@ class SimulationRunner:
             sc_df['network_name'] = [row['network_name']]
             sc_df['start_time'] = [row['start_time']]
             sc_df['end_time'] = [row['end_time']]
-            sc_df['G_EVAL_INT_START'] = [row['G_EVAL_INT_START']]
-            sc_df['G_EVAL_INT_END'] = [row['G_EVAL_INT_END']]
+            sc_df['evaluation_int_start'] = [row['evaluation_int_start']]
+            sc_df['evaluation_int_end'] = [row['evaluation_int_end']]
             sc_df['SAV_demand_ratio'] = [row['SAV_demand_ratio']]
             
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
@@ -61,15 +62,16 @@ class SimulationRunner:
         
         command = [
             "python",
-            str(self.py_path.parent/"SUMO_LibsumoServer.py"),
+            str(self.py_path.parent/"SUMO_TraciServer.py"),
             str(self.py_path.parent/"studies"/self.study_name/"scenarios"/"constant_config.csv"),
             str(self.py_path.parent/"studies"/self.study_name/"scenarios"/f"{self.sc_config_file_dict[sc_index]['scenario_name']}.csv"),
             str(self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/f"{self.sim_network_name}_{str(1-SAV_demand_ratio)}.sumocfg"),
             "sumo",
-            "info"
+            "debug"
         ]
        # try:
-        result = subprocess.run(command, capture_output=True, text=True)
+        result = subprocess.run(command)
+        #result = subprocess.run(command, capture_output=True, text=True)
             #print(f"Process ID {multiprocessing.current_process().pid} - Output:", result.stdout)
             #print(f"Process ID {multiprocessing.current_process().pid} - Errors:", result.stderr)
        # except subprocess.CalledProcessError as e:
