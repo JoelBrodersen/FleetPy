@@ -410,7 +410,32 @@ def get_fco_mode(fleetsim):
    
     return fco_vehicle_mode,fco_vehicles_op_id
 
-
+def get_current_edge_tt(sim_time,veh_edge_dict,veh_start_time_dict,veh_edge_start_time_count):
+    vehicle_id_list = traci.vehicle.getIDList()
+    for veh_id in vehicle_id_list: ##TODO: Filter for relevant vehicles
+        edge = traci.vehicle.getRoadID(veh_id)
+        veh_edge_dict.update({(veh_id,sim_time):edge})
+        ## A Vehicle was not in simulation last time step --> Initialise Count on new edge (0)
+        if (veh_id,sim_time-1) not in veh_edge_dict.keys(): 
+            veh_edge_start_time_count.update({(veh_id,edge,sim_time):0})
+            veh_start_time_dict.update({veh_id:sim_time})
+                
+        ## B Vehicle was simulation last time step, but on other edge --> Initialise Count on new edge (0)
+        elif veh_edge_dict[(veh_id,sim_time-1)] != edge:
+            veh_edge_start_time_count.update({(veh_id,edge,sim_time):0})
+            veh_start_time_dict.update({veh_id:sim_time})
+                
+        ## C Vehicle was simulation last time step and on same edge --> Update Count on edge (+1)
+        elif veh_edge_dict[(veh_id,sim_time-1)] == edge:
+            veh_edge_start_time_count[veh_id,edge,veh_start_time_dict[veh_id]] += 1
+            
+    ### Save Memory and delete entrys in veh_edge_dicts after 2 seconds
+    keys_to_delete = [key for key in veh_edge_dict if key[1] == sim_time-2]
+    for key in keys_to_delete:
+        del veh_edge_dict[key]
+            
+    return veh_edge_dict,veh_start_time_dict,veh_edge_start_time_count
+            
 def get_current_sumo_Network_speeds(fleetsim,edge_to_veh_current_speed_list):
     fco_vehicle_mode,fco_vehicles_op_id = get_fco_mode(fleetsim)
     vehicles_in_net = traci.vehicle.getIDList()
@@ -441,15 +466,51 @@ def get_current_sumo_Network_speeds(fleetsim,edge_to_veh_current_speed_list):
                  edge_to_veh_current_speed_list[vehicle_edge][Vid].append(VehicleSpeed)
             
     return edge_to_veh_current_speed_list 
-    
 
-def save_tt_to_csv(fs_edge_to_avg_tt, sim_time, resultsPath):
+def process_tt_data(veh_edge_start_time_count,veh_start_time_dict,sumo_edge_id_to_fs_edge):
+    t_veh_ids =[]
+    t_starting_times = []
+    t_edges =[]
+    t_traveltimes =[]
+            
+    for key, value in veh_edge_start_time_count.items():
+        if key[2]  == veh_start_time_dict.get(key[0]): ## Do not consider entries if Edge has not been completed yet
+            continue
+        t_veh_ids.append(str(key[0]))
+        t_edges.append(str(key[1]))
+        t_starting_times.append(key[2])
+        t_traveltimes.append(float((value+1)))
+    tt_df = pd.DataFrame(data={"veh_id":t_veh_ids,"edge_id":t_edges,"starting_time":t_starting_times,"edge_tt":t_traveltimes})
+    tt_df["starting_time"] = tt_df["starting_time"].astype(int)
+    tt_df = tt_df.groupby('edge_id').agg({'edge_tt': ['mean', 'std']}).reset_index()       
+    tt_df.columns = ['_'.join(col).strip('_') if isinstance(col, tuple) else col for col in tt_df.columns]
+    tt_df = tt_df.rename(columns={f'edge_tt_mean':"edge_tt",f'edge_tt_std':"edge_std"})       
+    tt_df["edge_tt"]=tt_df['edge_tt'].round(3)
+    tt_df["edge_std"]=tt_df['edge_std'].round(3)
+    ## if no std --> std equals 0
+    tt_df["edge_std"] = tt_df["edge_std"].fillna(0)
+    # if only one second than no update 
+    tt_df = tt_df[tt_df['edge_tt'] > 1] 
+    tt_df["edge_id"] = tt_df["edge_id"].apply(lambda x: sumo_edge_id_to_fs_edge.get(x, None))
+    tt_df = tt_df.dropna(subset=['edge_id'])
+    tt_df["from_node"] = tt_df["edge_id"].apply(lambda x: x[0])
+    tt_df["to_node"] = tt_df["edge_id"].apply(lambda x: x[1])
+    tt_df.drop(columns="edge_id",inplace=True)
+    return tt_df  
+
+
+def save_tt_to_csv(tt_df, sim_time, resultsPath):
     if not os.path.isdir(os.path.join(resultsPath, "EdgeTravelTimes")):
         os.mkdir(os.path.join(resultsPath, "EdgeTravelTimes")) 
+    path = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_{sim_time}.csv")
+    tt_df.to_csv(path)
+    """
+    
     path = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_{sim_time}.csv")
     data_tuples = [(key[0], key[1], value) for key, value in fs_edge_to_avg_tt.items()]
     df = pd.DataFrame(data_tuples, columns=['from_node', 'to_node', 'edge_tt'])
     df.to_csv(path)
+    """
     """
     export_tt_list = [(sumo_edge, avg_tt, sim_time) for sumo_edge, avg_tt in sumo_edge_to_avg_tt.items()]
     if os.path.isfile(path):
@@ -499,6 +560,11 @@ def run_simulation(fleetsim : SUMOcontrolledSim, sumo_edge_id_to_fs_edge, fs_edg
     resultsPath = fleetsim.dir_names[G_DIR_OUTPUT]
     sim_time_offset = fleetsim.scenario_parameters.get(G_SUMO_SIM_TIME_OFFSET, 0)
     end_time = fleetsim.scenario_parameters[G_SIM_END_TIME]
+
+    ##tt-retrieval
+    veh_edge_start_time_count = {}  #{(veh_id,edge,start_time):time_counter}
+    veh_start_time_dict ={} #{(veh_id,start_time_on_current_edge)}
+    veh_edge_dict ={} # {(veh_id,sim_time):edge_id,..}
     # get vehicle types of the simulation vehicles
     opvid_to_veh_type = {op_vid : veh.veh_type for op_vid, veh in fleetsim.sim_vehicles.items()} # {(op_id,veh_id):"veh_type"}
 
@@ -536,18 +602,39 @@ def run_simulation(fleetsim : SUMOcontrolledSim, sumo_edge_id_to_fs_edge, fs_edg
         # 3) sumo time step
         traci.simulationStep()
                 
-        # 4) get current network speeds
+        
+        # 4) get current vehicle positions and update 
+        old = False
         if sim_time%1==0 and update_travel_statistics_time_step<24*3600:
-            edge_to_veh_current_speed_list = get_current_sumo_Network_speeds(fleetsim,edge_to_veh_current_speed_list)
-            
-
+            veh_edge_dict,veh_start_time_dict,veh_edge_start_time_count = get_current_edge_tt(sim_time=sim_time,veh_edge_dict=veh_edge_dict,veh_start_time_dict=veh_start_time_dict,veh_edge_start_time_count=veh_edge_start_time_count)
+        
         # 5) send new travel times to fleetsim
         if sim_time%update_travel_statistics_time_step==0:
-            new_travel_times = update_edge_traveltimes(edge_to_veh_current_speed_list, sumo_edge_id_to_fs_edge, fs_edge_to_len, sim_time, resultsPath)
-            edge_to_veh_current_speed_list = {}
+
+            time_df = process_tt_data(veh_edge_start_time_count,veh_start_time_dict,sumo_edge_id_to_fs_edge)
+            time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),zip(list(time_df["edge_tt"]),list(time_df["edge_std"]))))
+            save_tt_to_csv(time_df, sim_time, resultsPath)
+            veh_edge_start_time_count ={}
+            veh_start_time_dict ={}
+            veh_edge_dict ={}
+                        
             if update_fleetsim_traveltimes:
-                fleetsim.update_network_travel_times(new_travel_times, sim_time)
-                fleetsim.routing_engine.load_tt_file_SUMO(resultsPath,sim_time)         
+                fleetsim.update_network_travel_times(time_update_dict, sim_time)
+                #fleetsim.routing_engine.load_tt_file_SUMO(resultsPath,sim_time)    
+            
+            
+            #edge_to_veh_current_speed_list = get_current_sumo_Network_speeds(fleetsim,edge_to_veh_current_speed_list)
+            
+            
+            
+            
+            
+            
+            
+            
+            #new_travel_times = update_edge_traveltimes(edge_to_veh_current_speed_list, sumo_edge_id_to_fs_edge, fs_edge_to_len, sim_time, resultsPath)
+            #edge_to_veh_current_speed_list = {}
+     
 
         # 6) collect the current positions of all fleet vehicles in SUMO
         vehicle_to_position_dict = get_current_vehicle_positions(fleetsim, sumo_edge_id_to_fs_edge)

@@ -7,9 +7,9 @@ import re
 
 py_path = pathlib.Path(__file__)
 
-SELECTED_SCENARIOS =[8,9,12,13]
+SELECTED_SCENARIOS =[20]
 STUDY_NAME = "fleetpy_sumo_coupling_in"
-PROCESS_COUNT = 4
+PROCESS_COUNT = 1
 SIM_NETWORK_NAME = "sumo_in"
 
 def get_current_max_key(FP_path):
@@ -52,7 +52,9 @@ class SimulationRunner:
             sc_df['evaluation_int_start'] = [row['evaluation_int_start']]
             sc_df['evaluation_int_end'] = [row['evaluation_int_end']]
             sc_df['SAV_demand_ratio'] = [row['SAV_demand_ratio']]
-            
+            sc_df['sumo_statistics_interval'] = [row['sumo_statistics_interval']]
+            sc_df['sumo_fco_vehicles'] = [row['sumo_fco_vehicles']]
+
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/STUDY_NAME/"scenarios"/f"{scenario_name}.csv", index=False)
         
@@ -67,7 +69,7 @@ class SimulationRunner:
             str(self.py_path.parent/"studies"/self.study_name/"scenarios"/f"{self.sc_config_file_dict[sc_index]['scenario_name']}.csv"),
             str(self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/f"{self.sim_network_name}_{str(1-SAV_demand_ratio)}.sumocfg"),
             "sumo",
-            "debug"
+            "info"
         ]
        # try:
         result = subprocess.run(command)

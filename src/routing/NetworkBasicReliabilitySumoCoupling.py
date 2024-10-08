@@ -41,4 +41,4 @@ class NetworkBasicReliabilitySumoCoupling(NetworkBasicReliabilityWithStore):
         :return None'''
         self._reset_internal_attributes_after_travel_time_update()
         for (o_node,d_node), (new_tt,new_tt_std) in new_travel_time_dict.items():
-            self._set_edge_tt(o_node, d_node, new_tt, new_tt_std) 
+            self._set_edge_tt(o_node, d_node, new_tt, new_tt_std)         print(f"Updated {len(new_travel_time_dict)} edges in FP Routing Engine with simulated values")

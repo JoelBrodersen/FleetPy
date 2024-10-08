@@ -36,6 +36,7 @@ class NetworkBasicWithStoreCppSumoCoupling(NetworkBasicWithStoreCpp):
             d_node = self.nodes[edge_index_tuple[1]]
             edge_obj = o_node.edges_to[d_node]
             self._set_edge_tt(edge_index_tuple[0], edge_index_tuple[1], new_tt) 
+        print(f"Updated {len(new_travel_time_dict)} edges in FP Routing Engine with simulated values.")
 
     def load_tt_file_SUMO(self, resultsPath,sim_time):
         """
