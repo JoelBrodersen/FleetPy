@@ -15,7 +15,7 @@ from src.routing.NetworkBasic import NetworkBasic
 from src.routing.NetworkBasic import Edge as BasicEdge
 from src.routing.NetworkBasic import Node as BasicNode
 
-from src.routing.cpp_router.PyNetwork import PyNetwork
+#from src.routing.cpp_router.PyNetwork import PyNetwork
 from src.routing.routing_imports.RouterReliability import RouterReliability
 from src.routing.routing_imports.Router import Router
 
