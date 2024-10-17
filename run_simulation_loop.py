@@ -7,9 +7,9 @@ import re
 
 py_path = pathlib.Path(__file__)
 
-SELECTED_SCENARIOS = list(range(25,28))
+SELECTED_SCENARIOS = list(range(72,73))
 STUDY_NAME = "fleetpy_sumo_coupling_in"
-PROCESS_COUNT = 3
+PROCESS_COUNT = 1
 SIM_NETWORK_NAME = "sumo_in"
 
 def get_current_max_key(FP_path):
@@ -54,13 +54,14 @@ class SimulationRunner:
             sc_df['SAV_demand_ratio'] = [row['SAV_demand_ratio']]
             sc_df['sumo_statistics_interval'] = [row['sumo_statistics_interval']]
             sc_df['sumo_fco_vehicles'] = [row['sumo_fco_vehicles']]
+            sc_df['op_routing_mode'] = [row['op_routing_mode']]
 
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/STUDY_NAME/"scenarios"/f"{scenario_name}.csv", index=False)
         
 
     def run_sumo_command(self,sc_index):
-        SAV_demand_ratio = float(self.sc_config_file_dict[sc_index]["SAV_demand_ratio"])
+        SAV_demand_ratio = float(self.sc_config_file_dict[sc_index].get("SAV_demand_ratio"))
         
         command = [
             "python",
