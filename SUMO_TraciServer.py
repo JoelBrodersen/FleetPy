@@ -86,7 +86,6 @@ def setup_fleetsimulation(constant_config_file, scenario_file, n_cpu_per_sim=1, 
     # read constant and scenario config files
     constant_cfg = config.ConstantConfig(constant_config_file)
     scenario_cfgs = config.ScenarioConfig(scenario_file)
- 
     # set constant parameters from function arguments
     const_abs = os.path.abspath(constant_config_file)
     study_name = os.path.basename(os.path.dirname(os.path.dirname(const_abs)))
@@ -216,13 +215,12 @@ def get_current_vehicle_positions(fleetsim, sumo_edge_id_to_fs_edge):
 
     return vehicle_to_position_dict
 
-def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehicles, sim_time, sumo_node_list, fs_edge_to_sumo_edge_id, opvid_to_veh_type):
+def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehicles, sim_time, sumo_node_list, fs_edge_to_sumo_edge_id, opvid_to_veh_type,sumo_edge_id_to_fs_edge):
     '''This functions reads a dict of routes with vehicleIDs as strings (key) and a list of edg (value) and sets the taxi routes accordingly ->(vehicleID, [e1,e2,e3])
     :param vehicle_ids:  list string of sumo vehicle ids
     :return: None'''
     # Receive new routes from FleetPy
     route_dict = fleetsim.get_new_vehicle_routes(sim_time) ## Gets new Routes (Leg by Leg from FP) {(op,veh_no):[n1,n2,...],...}
-         
     arrivedVehicles = []
     for opid_vid_tuple in route_dict.keys():
         veh_obj = fleetsim.sim_vehicles[opid_vid_tuple]
@@ -279,9 +277,11 @@ def update_routes_and_add_vehicles(fleetsim: SUMOcontrolledSim, initializedVehic
                         LOG.debug(f"Vehicle {sumo_vid} is Loaded and in Network and SumoRoute {sumoRoute} is current Route {currentRoute}")
                         pass 
 
-            # B) Vehicle is not in the simulation, but already loaded and waiting to be inserted (pending)
-            elif sumo_vid not in traci.vehicle.getIDList() and sumo_vid in traci.simulation.getPendingVehicles():
-                 LOG.debug(f"{sumo_vid} has to wait to get inserted") 
+            # B) Vehicle is not in the simulation, but already loaded and waiting to be inserted (pending) --> gets inserted in Fleetpy just at the beginning of the first edge
+            elif sumo_vid not in traci.vehicle.getIDList() and sumo_vid in traci.simulation.getPendingVehicles(): 
+                pending_veh_pos = sumo_edge_id_to_fs_edge[traci.vehicle.getRoute(sumo_vid)[0]]
+                fleetsim.update_vehicle_positions({sumo_v_id_to_fleetpy_v_id(sumo_vid):tuple((pending_veh_pos[0],pending_veh_pos[1],0.000001))}, sim_time)
+                LOG.info(f"{sumo_vid}/{sumo_v_id_to_fleetpy_v_id(sumo_vid)} has to wait to get inserted at Edge {traci.vehicle.getRoute(sumo_vid)[0]}/{pending_veh_pos}") 
 
             
             # C) First Try to Load Vehicle and insert it in the simulation    
@@ -577,7 +577,6 @@ def run_simulation(fleetsim : SUMOcontrolledSim, sumo_edge_id_to_fs_edge, fs_edg
     last_time = -1
     while True:
 
-
         # 1) fleetpy time step  
         sim_time = int(traci.simulation.getTime()) # sumo time in milliseconds
         sim_time += sim_time_offset
@@ -596,14 +595,13 @@ def run_simulation(fleetsim : SUMOcontrolledSim, sumo_edge_id_to_fs_edge, fs_edg
                    # for passenger in fleetsim.sim_vehicles[(op_id, veh_id)].pax:
                        # print(f"id: {passenger.rid} {passenger.o_node} --> {passenger.d_node}")
         
-        # 2) check for new rounds and finished boarding processes
-        arrivedVehicles, initializedVehicles = update_routes_and_add_vehicles(fleetsim, initializedVehicles, sim_time, sumo_node_list, fs_edge_to_sumo_edge_id, opvid_to_veh_type)
-       
+        # 2) check for new routes and finished boarding processes
+        arrivedVehicles, initializedVehicles = update_routes_and_add_vehicles(fleetsim, initializedVehicles, sim_time, sumo_node_list, fs_edge_to_sumo_edge_id, opvid_to_veh_type,sumo_edge_id_to_fs_edge)
+
         # 3) sumo time step
         traci.simulationStep()
                 
-        
-        # 4) get current vehicle positions and update 
+        # 4) get current vehicle positions and update travel time statistics (if needed
         old = False
         if sim_time%1==0 and update_travel_statistics_time_step<24*3600:
             veh_edge_dict,veh_start_time_dict,veh_edge_start_time_count = get_current_edge_tt(sim_time=sim_time,veh_edge_dict=veh_edge_dict,veh_start_time_dict=veh_start_time_dict,veh_edge_start_time_count=veh_edge_start_time_count)
@@ -622,20 +620,6 @@ def run_simulation(fleetsim : SUMOcontrolledSim, sumo_edge_id_to_fs_edge, fs_edg
                 fleetsim.update_network_travel_times(time_update_dict, sim_time)
                 #fleetsim.routing_engine.load_tt_file_SUMO(resultsPath,sim_time)    
             
-            
-            #edge_to_veh_current_speed_list = get_current_sumo_Network_speeds(fleetsim,edge_to_veh_current_speed_list)
-            
-            
-            
-            
-            
-            
-            
-            
-            #new_travel_times = update_edge_traveltimes(edge_to_veh_current_speed_list, sumo_edge_id_to_fs_edge, fs_edge_to_len, sim_time, resultsPath)
-            #edge_to_veh_current_speed_list = {}
-     
-
         # 6) collect the current positions of all fleet vehicles in SUMO
         vehicle_to_position_dict = get_current_vehicle_positions(fleetsim, sumo_edge_id_to_fs_edge)
         now = datetime.now()
@@ -668,7 +652,6 @@ def run_simulation(fleetsim : SUMOcontrolledSim, sumo_edge_id_to_fs_edge, fs_edg
                     LOG.debug(f"Is this succcessfull?")
                 except:
                     pass
-    
         step+=1
 
     t1_stop = perf_counter()
