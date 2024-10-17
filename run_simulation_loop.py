@@ -7,9 +7,9 @@ import re
 
 py_path = pathlib.Path(__file__)
 
-SELECTED_SCENARIOS = list(range(72,73))
+SELECTED_SCENARIOS = list(range(73,74))
 STUDY_NAME = "fleetpy_sumo_coupling_in"
-PROCESS_COUNT = 1
+PROCESS_COUNT = 2
 SIM_NETWORK_NAME = "sumo_in"
 
 def get_current_max_key(FP_path):

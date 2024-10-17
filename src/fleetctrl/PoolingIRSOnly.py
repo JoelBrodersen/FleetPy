@@ -320,7 +320,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         if assigned_vehicle_plan is not None:
             vehPlan_cost_value_dict  = self._get_Vehplan_cost_values(prq=prq,simulation_time=simulation_time,vehiclePlan=assigned_vehicle_plan)
             pu_time, do_time = assigned_vehicle_plan.pax_info.get(prq.get_rid_struct())
-            # offer = {G_OFFER_WAIT: pu_time - simulation_time, G_OFFER_DRIVE: do_time - pu_time,
+            # offer = {G_OFFER_WAIT: pu_time - simulation_time, G_OFFER_DRIVE: do_time - pu_time,rt
             #          G_OFFER_FARE: int(prq.init_direct_td * self.dist_fare + self.base_fare)}
             offer = TravellerOffer(prq.get_rid_struct(), self.op_id, pu_time - prq.rq_time, do_time - pu_time,
                                    self._compute_fare(simulation_time, prq, assigned_vehicle_plan),additional_parameters=vehPlan_cost_value_dict)

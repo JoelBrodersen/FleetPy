@@ -595,7 +595,7 @@ def insert_prq_in_selected_veh_list(selected_veh_obj_list : List[SimulationVehic
         veh_plan = vid_to_vehplan_assignments[veh_obj.vid]
         current_vehplan_utility = veh_plan.get_utility()
         if current_vehplan_utility is None:
-            current_vehplan_utility = obj_function(sim_time, veh_obj, veh_plan, rq_dict, routing_engine)
+            current_vehplan_utility = obj_function(sim_time, veh_obj, veh_plan, rq_dict, routing_engine,prq)
             veh_plan.set_utility(current_vehplan_utility)
         # use (vid, vehplan, delta_cfv) tuple format from here on
         keep_plans = []
@@ -606,7 +606,7 @@ def insert_prq_in_selected_veh_list(selected_veh_obj_list : List[SimulationVehic
         # TODO choice of insert function/heuristics per trigger
         for next_insertion_veh_plan in simple_insert(routing_engine, sim_time, veh_obj, veh_plan, prq,
                                                      const_bt, add_bt, skip_first_position_insertion=skip_first_pos):
-            next_insertion_utility = obj_function(sim_time, veh_obj, next_insertion_veh_plan, rq_dict, routing_engine)
+            next_insertion_utility = obj_function(sim_time, veh_obj, next_insertion_veh_plan, rq_dict, routing_engine,prq)
             delta_cfv = next_insertion_utility - current_vehplan_utility
             if threshold is None or delta_cfv < threshold:
                 keep_plans.append((veh_obj.vid, next_insertion_veh_plan, delta_cfv))
