@@ -316,6 +316,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         :type offer_dict_without_plan: dict or None
         :return: offer for request
         :rtype: TravellerOffer
+        """
         if assigned_vehicle_plan is not None:
             vehPlan_cost_value_dict  = self._get_Vehplan_cost_values(prq=prq,simulation_time=simulation_time,vehiclePlan=assigned_vehicle_plan)
             pu_time, do_time = assigned_vehicle_plan.pax_info.get(prq.get_rid_struct())
