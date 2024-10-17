@@ -444,8 +444,8 @@ def return_pooling_objective_function(vr_control_func_dict:dict)->Callable[[int,
                 for ps in veh_plan.list_plan_stops:
                     pos = ps.get_pos()
                     if pos != last_pos:
-                        res =  routing_engine.return_travel_costs_1to1_reliability(last_pos, pos)
-                        std = (res[0]-res[1]*traveler_vot)/traveler_vor #results from cost function: C = vot*tt + vor*std
+                        res =  routing_engine.return_travel_costs_1to1(last_pos, pos,mode=routing_engine.routing_mode)
+                        std = res[2]
                         sum_std += std
                         last_pos = pos
             # value of time term (treat waiting and in-vehicle time the same)

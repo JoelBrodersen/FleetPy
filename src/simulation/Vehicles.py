@@ -570,7 +570,7 @@ class SimulationVehicle:
         this is usefull in case it has to be overwritten to trigger additional processes
         :param target_pos: destination position tuple
         :return: list of node ids (route from pos to target_pos)"""
-        return self.routing_engine.return_best_route_1to1(self.pos, target_pos)
+        return self.routing_engine.return_best_route_1to1(self.pos, target_pos,mode = self.routing_engine.routing_mode)
 
 # ===================================================================================================== #
 
@@ -718,7 +718,7 @@ class ExternallyMovingSimulationVehicle(SimulationVehicle):
                 self._route_update_needed = True
 
     def reached_destination(self, simulation_time):
-        """ this function is called, when the corresponding aimsun vehicle reaches its destination in aimsun
+        """ this function is called, when the corresponding SUMO vehicle reaches its destination in aimsun
         :param simulation_time: time the vehicle reached destination
         """
         if self.status in G_DRIVING_STATUS:
@@ -730,14 +730,14 @@ class ExternallyMovingSimulationVehicle(SimulationVehicle):
                 self.pos = self.routing_engine.return_node_position(self.pos[1])
             if len(self.cl_driven_route) > 1:
                 try:
-                    _, driven_distance = self.routing_engine.return_route_infos(self.cl_driven_route, 0.0, 0.0)
+                    travel_time, driven_distance,travel_time_std,route_cfv = self.routing_engine.return_route_infos(self.cl_driven_route, 0.0, 0.0)
                 except KeyError:
                     LOG.debug(f'reached_destination had a Keyerror')
                     driven_distance = 0
                     if len(self.cl_driven_route) > 2:
                         for i in range(2, len(self.cl_driven_route)):
                             try:
-                                tt, dis = self.routing_engine.get_section_infos(self.cl_driven_route[i-1], self.cl_driven_route[i])
+                                tt, dis,std,cfv = self.routing_engine.get_section_infos(self.cl_driven_route[i-1], self.cl_driven_route[i])
                             except:
                                 dis = 0
                             driven_distance += dis

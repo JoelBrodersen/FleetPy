@@ -5,7 +5,6 @@ import numpy as np
 np.import_array()
 from Network cimport Network
 
-
 cdef class PyNetwork:
     cdef Network*c_net  # hold a pointer to the C++ instance which we're wrapping
 
@@ -30,7 +29,7 @@ cdef class PyNetwork:
         """
         self.c_net.updateEdgeTravelTimes(file_path)
 
-    def computeTravelCostsXto1(self, start_node_index, list_target_node_indices, max_time_range = None, max_targets = None):
+    def computeTravelCostsXto1(self, start_node_index, list_target_node_indices, max_time_range = None, max_targets = None,mode="edge_tt"):
         """
         :param start_node_index: int start node
         :param list_target_node_indices: list int targets (X)
@@ -56,9 +55,14 @@ cdef class PyNetwork:
         tts = np.zeros((N_targets,), dtype=np.float)
         cdef np.ndarray[double, ndim=1, mode='c'] dis
         dis = np.zeros((N_targets,), dtype=np.float)
+        cdef np.ndarray[double, ndim=1, mode='c'] std
+        std = np.zeros((N_targets,), dtype=np.float)
+        cdef np.ndarray[double, ndim=1, mode='c'] cfv
+        cfv = np.zeros((N_targets,), dtype=np.float)
         #calling c++: results will be stored in tts/dis; returns number of reached targets
-        cdef int reached_targets = self.c_net.computeTravelCostsXTo1py(start_node_index, N_targets, &targets[0], &targets[0], &tts[0], &dis[0], mr, mt)
-        return [(targets[i], tts[i], dis[i]) for i in range(reached_targets)]
+        mode =  mode.encode('utf-8')
+        cdef int reached_targets = self.c_net.computeTravelCostsXTo1py(start_node_index, N_targets, &targets[0], &targets[0], &tts[0], &dis[0],&std[0], &cfv[0], mr, mt,mode)
+        return [(targets[i], tts[i], dis[i], std[i],cfv[i]) for i in range(reached_targets)]
 
     def computeTravelCosts1toX(self, start_node_index, list_target_node_indices, max_time_range = None, max_targets = None):
         """
@@ -90,19 +94,24 @@ cdef class PyNetwork:
         cdef int reached_targets = self.c_net.computeTravelCosts1ToXpy(start_node_index, N_targets, &targets[0], &targets[0], &tts[0], &dis[0], mr, mt)
         return [(targets[i], tts[i], dis[i]) for i in range(reached_targets)]
 
-    def computeTravelCosts1To1(self, start_node_index, end_node_index):
+    def computeTravelCosts1To1(self, start_node_index, end_node_index,mode):
         """
         :param start_node_index: int start_node
         :param end_node_index: int end_node
         :return: tuple (tt, dis) / (-1.0, -1.0) if no route found
+        &dis, &std, &cfv
         """
-        cdef double dis
-        cdef double tt
-        self.c_net.computeTravelCosts1To1py(start_node_index, end_node_index, &tt, &dis)
-        return (tt, dis)
+        mode =  mode.encode('utf-8')
+        cdef double dis = 0.0
+        cdef double tt = 0.0
+        cdef double std = 0.0
+        cdef double cfv = 0.0
+        self.c_net.computeTravelCosts1To1py(start_node_index, end_node_index,mode,&tt,&dis, &std, &cfv)
+        return (tt, dis,std,cfv)
 
-    def computeRoute1To1(self, start_node_index, end_node_index):
-        cdef int route_length = self.c_net.computeRouteSize1to1(start_node_index, end_node_index)
+    def computeRoute1To1(self, start_node_index, end_node_index,mode):
+        mode =  mode.encode('utf-8')
+        cdef int route_length = self.c_net.computeRouteSize1to1(start_node_index,end_node_index,mode)
         cdef np.ndarray[int, ndim=1, mode='c'] route
         if route_length >= 0:
             route = np.zeros((route_length,), dtype=np.int32)

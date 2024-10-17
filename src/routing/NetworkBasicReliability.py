@@ -182,10 +182,10 @@ class NetworkBasicReliability(NetworkBasic):
         """
         if self._current_tt_factor is None:
             tt, dis, tt_std = self.nodes[start_node_index].get_travel_infos_to(end_node_index)
-            return tt, dis
+            return (tt, dis, tt_std)
         else:
             tt, dis, tt_std = self.nodes[start_node_index].get_travel_infos_to(end_node_index)
-            return (tt * self._current_tt_factor, dis)
+            return (tt * self._current_tt_factor, dis,tt_std)
         
     def get_section_infos_std(self, start_node_index, end_node_index):
         """

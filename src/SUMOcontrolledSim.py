@@ -71,6 +71,8 @@ class SUMOcontrolledSim(FleetSimulationBase):
         :param scenario_parameters: row of pandas data-frame; entries are saved as x["key"]
         """
         super().add_init(scenario_parameters)
+        print(f"Operator Routing Mode: {scenario_parameters[G_OP_ROUTING_MODE]}")
+        self.routing_engine.set_routing_mode(scenario_parameters[G_OP_ROUTING_MODE])
 
     def step(self, sim_time):
         """This method determines the simulation flow in a time step.
@@ -109,8 +111,6 @@ class SUMOcontrolledSim(FleetSimulationBase):
                 #self.user_request(rq_obj, sim_time)
                 self.operators[op_id].user_request(rq_obj, sim_time)    
                 amod_offer = self.operators[op_id].get_current_offer(rid)
-
-                
                 LOG.debug(f'amod offer {amod_offer} ')
                 if amod_offer is not None:
                     rq_obj.receive_offer(op_id, amod_offer, sim_time)

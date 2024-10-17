@@ -279,6 +279,9 @@ G_OP_PA_ASSTH = "op_parcel_assignment_threshold"
 G_OP_PA_OBASS = "op_parcel_passenger_ob_assignment"
 G_OP_PA_REDEL = "op_parcel_remaining_delivery_time"
 
+# Routing Engine Mode
+G_OP_ROUTING_MODE = "op_routing_mode"
+
 # -------------------------------------------------------------------------------------------------------------------- #
 # Charging Stations/Depots
 # ------------------------
