@@ -244,7 +244,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         :return: utility of vehicle plan
         :rtype: float
         """
-        return self.vr_ctrl_f(simulation_time, veh_obj, vehicle_plan, self.rq_dict, self.routing_engine)
+        return self.vr_ctrl_f(simulation_time, veh_obj, vehicle_plan, self.rq_dict, self.routing_engine,prq=None)
 
     def _get_Vehplan_cost_values(self,prq,simulation_time,vehiclePlan):
         stops_list_waiting_time = [self.sim_vehicles[vehiclePlan.vid].pos]

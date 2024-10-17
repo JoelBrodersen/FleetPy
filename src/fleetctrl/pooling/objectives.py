@@ -426,7 +426,7 @@ def return_pooling_objective_function(vr_control_func_dict:dict)->Callable[[int,
         traveler_vot = vr_control_func_dict["vot"]
         traveler_vor = vr_control_func_dict["vor"]
 
-        def control_f(simulation_time:float, veh_obj:SimulationVehicle, veh_plan:VehiclePlan, rq_dict:Dict[Any,PlanRequest], routing_engine:NetworkBase)->float:
+        def control_f(simulation_time:float, veh_obj:SimulationVehicle, veh_plan:VehiclePlan, rq_dict:Dict[Any,PlanRequest], routing_engine:NetworkBase,prq)->float:
             """This function combines the total driving costs and the value of customer time.
 
             :param simulation_time: current simulation time
