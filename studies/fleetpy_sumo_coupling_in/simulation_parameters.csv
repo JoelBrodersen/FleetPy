@@ -67,4 +67,5 @@ simulation_index,SAV_demand_ratio,vot,vor,fleet_size,network_name,vehtype,object
 70,0.02,1,1,150,sumo_in,default_vehtype,user_vot_vor,36000,43200,0,32400,43200,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim,1200,all
 71,0.02,1,2,150,sumo_in,default_vehtype,user_vot_vor,36000,43200,0,32400,43200,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim,1200,all
 72,0.02,1,0,150,sumo_in_tt_sim_mean_std,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilityWithStoreCppSumoCoupling,SUMOcontrolledSim,,,edge_cfv
-
+73,0.02,1,0,150,sumo_in_tt_sim_mean_std,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilityWithStoreCppSumoCoupling,SUMOcontrolledSim,,,edge_tt
+74,0.02,1,0,150,sumo_in_tt_sim_mean_std,default_vehtype,user_vot_vor,21600,28800,0,18000,28800,PoolingIRSOnly,sumo_in,NetworkBasicReliabilitySumoCoupling,SUMOcontrolledSim,,
