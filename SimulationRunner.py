@@ -35,9 +35,6 @@ class SimulationRunner:
         self.sc_config = sc_config
         self.sc_config_file_dict = {}
         self.res_dir = py_path.parent / "studies" / self.study_name / "results"
-        print(sc_config.describe())
-        print(sc_config.keys())
-
 
     def create_sc_config_files(self):
         for sc_index, row in self.sc_config.iterrows():

@@ -125,10 +125,7 @@ class SUMOFleetPyServer():
             
         scenario_cfgs[0][G_SIM_START_TIME] += scenario_cfgs[0].get(G_SUMO_SIM_TIME_OFFSET, 0)
         
-        print(scenario_cfgs[0])
         SF = load_simulation_environment(scenario_cfgs[0])
-        
-
         self.fp_scenario_config = scenario_cfgs[0]
 
         self.fp_sim_env = SF
