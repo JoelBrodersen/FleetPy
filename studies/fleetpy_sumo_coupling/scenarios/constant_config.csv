@@ -39,3 +39,13 @@ op_reoptimisation_timestep,60
 ##5,DynamicNetwork and PT Crowding
 ##6,Evaluation
 log_level,verbose
+##7,SUMO
+sumo_route-steps,200
+sumo_no-internal-links,False
+sumo_ignore-junction-blocker,20
+sumo_time-to-teleport,120
+sumo_time-to-teleport.highways,0
+sumo_eager-insert,False
+sumo_edgeData.interval,3600
+sumo_edgeData.withInternal,True
+sumo_edgeData.excludeEmpty,True
