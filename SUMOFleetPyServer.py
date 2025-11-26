@@ -4,7 +4,7 @@ from abc import abstractmethod
 import os, sys
 
 # Fix libsumo DLL loading issue by adding SUMO bin directory to DLL search path
-import traci ##TODO: Change to Libsumo for Linux server
+ ##TODO: Change to Libsumo for Linux server
 import pandas as pd
 import csv
 import logging 
@@ -804,11 +804,19 @@ if __name__ == "__main__":
             log_level = sys.argv[5]
         else:
             log_level = "info"
+        if len(sys.argv) > 6:
+            sumo_api = sys.argv[6]
+        else:
+            sumo_api = "traci"
     except:
         print("something is wrong with the input given: ", sys.argv)
         exit()
 
-
+    if sumo_api == "libsumo":
+        import libsumo as traci
+    else:
+        import traci
+        
     SUMOFleetPyCoupling = SUMOFleetPyServer(constant_config_path=constant_config_path, scenario_config_path=scenario_config_path, sumo_config=sumo_config, sumoBinary=sumoBinary, log_level=log_level)
     SUMOFleetPyCoupling.setup_fleetsimulation()
     SUMOFleetPyCoupling.setup_sumo_simulation()

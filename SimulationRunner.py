@@ -104,7 +104,8 @@ class SimulationRunner:
             str(self.py_path.parent/"studies"/self.study_name/"scenarios"/f"{self.sc_config_file_dict[sc_index]['scenario_name']}.csv"),
             str(sumocfg_path),
             "sumo",
-            "warning"
+            "warning",
+            args.sumo_api
         ]
        # try:
         result = subprocess.run(command)
@@ -164,6 +165,7 @@ if __name__ == "__main__":
     parser.add_argument('--sc_to', type=int, default=None, help='To Scenario... (including)')
     parser.add_argument('--fp_path ', type=str, default=str(py_path.parent), help='Path to FleetPy repository')
     parser.add_argument('--fp_coupling_path ', type=str, default=str(py_path.parent.parent / "fleetpy_coupling"), help='Path to FleetPy Coupling repository')
+    parser.add_argument('--sumo-api', type=str, default="traci", help='Which SUMO API to use (traci or libsumo)')
     args = parser.parse_args()
     
     selected_scenarios =list(range(args.sc_from,args.sc_to+1)) if args.sc_from is not None and args.sc_to is not None else args.scenarios
