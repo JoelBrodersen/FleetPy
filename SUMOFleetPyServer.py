@@ -202,7 +202,7 @@ class SUMOFleetPyServer():
                 "--statistic-output",statisticsPath,
                 "--start", 
                 "--seed", str(self.fp_sim_env.scenario_parameters[G_RANDOM_SEED]),
-                "--no-warnings",str(True),
+                "--no-warnings",str(False),
                 "--route-steps", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_ROUTE_STEPS, 200)),
                 "--no-internal-links", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_NO_INTERNAL_LINKS, False)),
                 "--ignore-junction-blocker", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_IGNORE_JUNCTION_BLOCKER, -1)),
@@ -288,7 +288,6 @@ class SUMOFleetPyServer():
 
         # get vehicle types of the simulation vehicles
         self.fp_opvid_to_veh_type = {op_vid : veh.veh_type for op_vid, veh in self.fp_sim_env.sim_vehicles.items()} # {(op_id,veh_id):"veh_type"}
-
         #Check for old EdgeTravelTimes and delete them if they are still there
         if os.path.isfile(os.path.join(resultsPath, "EdgeTravelTimes", "new_travel_times.csv")):
             os.remove(os.path.join(resultsPath, "EdgeTravelTimes", "new_travel_times.csv"))
@@ -380,7 +379,6 @@ class SUMOFleetPyServer():
         evaluation_start_time = int(self.fp_sim_env.scenario_parameters.get(G_EVAL_INT_START,self.fp_sim_env.scenario_parameters.get(G_SIM_START_TIME)))
         evaluation_end_time = int(self.fp_sim_env.scenario_parameters.get(G_EVAL_INT_END,self.fp_sim_env.scenario_parameters.get(G_SIM_END_TIME)))
         
-        breakpoint()
         eval.standard_evaluation(self.fp_sim_env.dir_names[G_DIR_OUTPUT], evaluation_start_time =evaluation_start_time, evaluation_end_time =evaluation_end_time, print_comments=True, dir_names_in = {})
         eval.evaluate_folder(self.fp_sim_env.dir_names[G_DIR_OUTPUT],evaluation_start_time = evaluation_start_time, evaluation_end_time = evaluation_end_time, print_comments = False)
         sys.stdout.flush()
