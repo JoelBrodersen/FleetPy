@@ -88,13 +88,13 @@ class SimulationRunner:
     def run_fleetpy_sc(self,sc_index):
         MOD_demand_subset = float(self.sc_config_file_dict[sc_index].get("MOD_demand_subset"))
         if self.sc_config_file_dict[sc_index].get("rerouting_sc") == None or math.isnan(self.sc_config_file_dict[sc_index].get("rerouting_sc")):
-            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(MOD_demand_subset,2)}.sumocfg"
+            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(MOD_demand_subset,2)}.sumocfg"
         else:
             rerouting_sc = self.sc_config_file_dict[sc_index].get("rerouting_sc")
 
             rerouting_sc = str(int(rerouting_sc))
             #rerouting_sc = str(int(self.sc_config_file_dict[sc_index].get("rerouting_sc").round()))
-            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(MOD_demand_subset,2)}_r_{rerouting_sc.zfill(3)}.sumocfg"
+            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(MOD_demand_subset,2)}_r_{rerouting_sc.zfill(3)}.sumocfg"
 
         
         command = [
