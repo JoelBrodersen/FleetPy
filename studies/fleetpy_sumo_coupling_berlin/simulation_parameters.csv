@@ -2,3 +2,5 @@
 "1","0.02","10","sumo_berlin","FP_pooling_vehtype","total_system_time","0","1200","0","0","1200","PoolingIRSOnly","sumo_berlin","NetworkBasicWithStoreCppSumoCoupling","SUMOcontrolledSim","",,,"0",""
 "2","0.02","1000","sumo_berlin","FP_pooling_vehtype","total_system_time","21600","25200","0","18000","28800","PoolingIRSOnly","sumo_berlin","NetworkBasicWithStoreCppSumoCoupling","SUMOcontrolledSim","",,,"0",""
 "3","0.1","5000","sumo_berlin","FP_pooling_vehtype","total_system_time","21600","25200","0","18000","28800","PoolingIRSOnly","sumo_berlin","NetworkBasicWithStoreCppSumoCoupling","SUMOcontrolledSim","",,,"0",""
+"4","0.02","2000","sumo_berlin","FP_pooling_vehtype","total_system_time","57600","61200","0","54000","68400","PoolingIRSOnly","sumo_berlin","NetworkBasicWithStoreCppSumoCoupling","SUMOcontrolledSim","",,,"0",""
+"5","0.1","10000","sumo_berlin","FP_pooling_vehtype","total_system_time","57600","61200","0","54000","68400","PoolingIRSOnly","sumo_berlin","NetworkBasicWithStoreCppSumoCoupling","SUMOcontrolledSim","",,,"0",""
