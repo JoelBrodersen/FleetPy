@@ -65,9 +65,5 @@ dependencies:
   - tqdm
   - attrs
 
-  # SUMO
-  - traci
-  - libsumo
-
   - pip:
       - pyqtwebengine
