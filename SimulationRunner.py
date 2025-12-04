@@ -45,7 +45,7 @@ class SimulationRunner:
            
             sc_df["scenario_name"] = [scenario_name]
             sc_df["op_module"] = ["PoolingIRSOnly"]
-            sc_df['rq_file'] = [f"{row['network_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}.csv"]
+            sc_df['rq_file'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}.csv"]
             sc_df['demand_name'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}"]
             sc_df['op_fleet_composition'] = [f"{row['vehtype']}:{row['fleet_size']}"]
             sc_df['network_type'] = [row['network_type']]
