@@ -409,8 +409,7 @@ class SUMOFleetPyServer():
                     if loaded_vehicle not in vehicles_from_main:
                         traci.vehicle.remove(loaded_vehicle)
                             
-                if branch_step > 0:
-                    sim_pos_dict_branch,res_list_branch = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict_branch,res_list=res_list_branch,sim_start_time=start_step)
+                sim_pos_dict_branch,res_list_branch = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict_branch,res_list=res_list_branch,sim_start_time=start_step)
 
                 traci.simulationStep()
 
@@ -593,9 +592,9 @@ class SUMOFleetPyServer():
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
         print(f"Getting current edge travel times at sim_time {sim_time} start_time {sim_start_time}")
-        breakpoint()
         sim_vehicle_id_list = traci.vehicle.getIDList()
         sim_pos_dict[sim_time] = {}
+        print(sim_pos_dict)
         # Initialise the first time step
         if sim_start_time == sim_time:
             for veh_id in sim_vehicle_id_list:
