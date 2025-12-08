@@ -339,7 +339,10 @@ class SUMOFleetPyServer():
 
             # 4) get current vehicle positions and update travel time statistics (if needed)
             if sim_time%1==0 and self.g_update_fleetsim_traveltimes==True:
-                sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,sim_pos_dict=sim_pos_dict,res_list=res_list)
+                sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,
+                                                                    sim_pos_dict=sim_pos_dict,
+                                                                    res_list=res_list,
+                                                                    sim_start_time=self.fp_sim_env.scenario_parameters.get(G_SIM_START_TIME))  ##sim_pos_dict: {sim_time:{veh_id:(edge,start_time_on_this_edge)}}
             
 
             ## Sim-based Prediction of future travel times
@@ -407,7 +410,7 @@ class SUMOFleetPyServer():
                         traci.vehicle.remove(loaded_vehicle)
                             
                 if branch_step > 0:
-                    sim_pos_dict_branch,res_list_branch = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict_branch,res_list=res_list_branch)
+                    sim_pos_dict_branch,res_list_branch = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict_branch,res_list=res_list_branch,sim_start_time=start_step)
 
                 traci.simulationStep()
 
@@ -588,11 +591,11 @@ class SUMOFleetPyServer():
                 sumoRoute.append(edgeID)
         return sumoRoute
 
-    def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list):
+    def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time=G_SIM_START_TIME):
         sim_vehicle_id_list = traci.vehicle.getIDList()
         sim_pos_dict[sim_time] = {}
         # Initialise the first time step
-        if self.fp_sim_env.scenario_parameters.get(G_SIM_START_TIME, 0) == sim_time:
+        if self.fp_sim_env.scenario_parameters.get(sim_start_time, 0) == sim_time:
             for veh_id in sim_vehicle_id_list:
                 edge = traci.vehicle.getRoadID(veh_id)
                 sim_pos_dict[sim_time].update({veh_id:(edge,sim_time)})    ##sim_pos_dict: {sim_time:{veh_id:(edge,start_time_on_this_edge)}}
@@ -640,7 +643,7 @@ class SUMOFleetPyServer():
         
         # Delete old entries in sim_pos_dict to save memory
         if sim_time-2 in sim_pos_dict.keys():
-            if sim_time -2 >= self.fp_sim_env.scenario_parameters.get(G_SIM_START_TIME, 0):
+            if sim_time -2 >= self.fp_sim_env.scenario_parameters.get(sim_start_time, 0):
                 del sim_pos_dict[sim_time-2]
 
         return sim_pos_dict,res_list
