@@ -205,7 +205,7 @@ class SUMOFleetPyServer():
                 "--start", 
                 "--seed", str(self.fp_sim_env.scenario_parameters[G_RANDOM_SEED]),
                 "--no-warnings",str(False),
-                "--route-steps", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_ROUTE_STEPS, 200)),
+                #"--route-steps", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_ROUTE_STEPS, 200)),
                 "--no-internal-links", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_NO_INTERNAL_LINKS, False)),
                 "--ignore-junction-blocker", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_IGNORE_JUNCTION_BLOCKER, -1)),
                 "--time-to-teleport", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_TIME_TO_TELEPORT, 300)),
