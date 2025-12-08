@@ -389,6 +389,7 @@ class SUMOFleetPyServer():
         Parameters:
             start_step (int): The step number from which the branch simulation starts.
         """
+        resultsPath = self.fp_sim_env.dir_names[G_DIR_OUTPUT]
         sim_pos_dict = {} 
         res_list = []  
         try:
