@@ -407,7 +407,7 @@ class SUMOFleetPyServer():
                         traci.vehicle.remove(loaded_vehicle)
                             
                     
-                sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,sim_pos_dict=sim_pos_dict,res_list=res_list)
+                sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict,res_list=res_list)
 
                 traci.simulationStep()
 
