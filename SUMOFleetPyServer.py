@@ -414,14 +414,13 @@ class SUMOFleetPyServer():
         except Exception as e:
             print(f"An error occurred in branch simulation: {e}")
             
-        time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
+        time_df = self._process_tt_data(res_list=res_list,sim_time=start_step)
         res_list = []  # Clear res_list to prevent unlimited growth
-        self._save_tt_to_csv(time_df, sim_time, mode="simulation_prediction")
+        self._save_tt_to_csv(time_df, start_step, mode="simulation_prediction")
         time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
         if self.g_update_fleetsim_traveltimes==True:
-            self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
-            self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="simulation_prediction")  
-
+            self.fp_sim_env.update_network_travel_times(time_update_dict, start_step)
+            self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,start_step, mode="simulation_prediction")  
         print(f"Branch at step {start_step} finished. Reloading main simulation state.")
         #reload main simulation state
         traci.simulation.loadState(str(state_path))
@@ -645,9 +644,6 @@ class SUMOFleetPyServer():
         return sim_pos_dict,res_list
 
     def _get_hybrid_router_tt(self,tt_df,sim_time):
-        if self.fp_sim_env.scenario_parameters.get("hybrid_router") == 0:
-            return tt_df
-        
         sim_hour = int(sim_time/3600)
         #tt_df["count"] = tt_df["count"] * 3600/int(self.fp_sim_env.scenario_parameters.get("sumo_statistics_interval"))
         tt_df = tt_df.reset_index(drop=True)
@@ -695,7 +691,8 @@ class SUMOFleetPyServer():
         tt_df["edge_tt"]=tt_df['edge_tt'].round(3)
         tt_df["edge_var"] = tt_df["edge_var"].fillna(0)
         tt_df["edge_var"]=tt_df['edge_var'].round(3)
-        tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
+        if self.fp_sim_env.scenario_parameters.get("hybrid_router") == 1:
+            tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
