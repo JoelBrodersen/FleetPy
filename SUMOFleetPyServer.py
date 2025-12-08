@@ -406,7 +406,7 @@ class SUMOFleetPyServer():
                     if loaded_vehicle not in vehicles_from_main:
                         traci.vehicle.remove(loaded_vehicle)
                             
-                if branch_step%1==0:
+                if branch_step > 0:
                     sim_pos_dict_branch,res_list_branch = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict_branch,res_list=res_list_branch)
 
                 traci.simulationStep()
