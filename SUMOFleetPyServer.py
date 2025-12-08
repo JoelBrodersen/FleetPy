@@ -211,7 +211,7 @@ class SUMOFleetPyServer():
                 "--time-to-teleport", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_TIME_TO_TELEPORT, 300)),
                 "--time-to-teleport.highways", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_TIME_TO_TELEPORT_HIGHWAYS, 0)),
                 "--eager-insert", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_EAGER_INSERT, False)),
-                "route-steps",str(1)
+                "--route-steps",str(1)
                 ]    
      
         traci.start(sumoCmd)
