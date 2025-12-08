@@ -359,6 +359,7 @@ class SUMOFleetPyServer():
 
             # 5) send new travel times to fleetsim
             if (sim_time%self.g_sumo_t_update==0) and self.g_update_fleetsim_traveltimes==True and self.g_sim_based_pred==False:
+                print(f"Updating FleetPy travel times at sim_time {sim_time}")
                 time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
                 time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
                 self._save_tt_to_csv(time_df, sim_time, mode="real-time")
@@ -367,7 +368,7 @@ class SUMOFleetPyServer():
                 if self.g_update_fleetsim_traveltimes==True:
                     self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
                     self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="real-time")  
-
+                
             # 6) collect the current positions of all fleet vehicles in SUMO
             vehicle_to_position_dict = self._get_current_vehicle_positions()
 
@@ -425,9 +426,10 @@ class SUMOFleetPyServer():
         if self.g_update_fleetsim_traveltimes==True:
             self.fp_sim_env.update_network_travel_times(time_update_dict, start_step)
             self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,start_step, mode="simulation_prediction")  
-        print(f"Branch from step {start_step} to {current_step} finished. Reloading main simulation state.")
+        print(f"Branch from step {start_step} to {current_step} finished.")
         #reload main simulation state
         traci.simulation.loadState(str(state_path))
+        print("Main simulation state reloaded.")
 
 
 
