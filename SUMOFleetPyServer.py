@@ -354,7 +354,7 @@ class SUMOFleetPyServer():
                 traci.simulation.saveState(str(state_path))
                 print(f"Saved simulation state to {state_path}")
                 self._run_branch_simulation(state_path,start_step=sim_time)
-                pass
+                
 
 
             # 5) send new travel times to fleetsim
