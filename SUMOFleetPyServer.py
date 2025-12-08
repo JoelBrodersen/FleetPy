@@ -591,17 +591,16 @@ class SUMOFleetPyServer():
                 sumoRoute.append(edgeID)
         return sumoRoute
 
-    def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time=G_SIM_START_TIME):
+    def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
         print(f"Getting current edge travel times at sim_time {sim_time} start_time {sim_start_time}")
         breakpoint()
         sim_vehicle_id_list = traci.vehicle.getIDList()
         sim_pos_dict[sim_time] = {}
         # Initialise the first time step
-        if self.fp_sim_env.scenario_parameters.get(sim_start_time, 0) == sim_time:
+        if sim_start_time == sim_time:
             for veh_id in sim_vehicle_id_list:
                 edge = traci.vehicle.getRoadID(veh_id)
                 sim_pos_dict[sim_time].update({veh_id:(edge,sim_time)})    ##sim_pos_dict: {sim_time:{veh_id:(edge,start_time_on_this_edge)}}
-            
             
             return sim_pos_dict ,res_list
         
