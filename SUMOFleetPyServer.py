@@ -592,6 +592,8 @@ class SUMOFleetPyServer():
         return sumoRoute
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time=G_SIM_START_TIME):
+        print(f"Getting current edge travel times at sim_time {sim_time} start_time {sim_start_time}")
+        breakpoint()
         sim_vehicle_id_list = traci.vehicle.getIDList()
         sim_pos_dict[sim_time] = {}
         # Initialise the first time step
