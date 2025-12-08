@@ -368,7 +368,7 @@ class SUMOFleetPyServer():
                 if self.g_update_fleetsim_traveltimes==True:
                     self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
                     self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="real-time")  
-                
+
             # 6) collect the current positions of all fleet vehicles in SUMO
             vehicle_to_position_dict = self._get_current_vehicle_positions()
 
@@ -428,7 +428,11 @@ class SUMOFleetPyServer():
             self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,start_step, mode="simulation_prediction")  
         print(f"Branch from step {start_step} to {current_step} finished.")
         #reload main simulation state
-        traci.simulation.loadState(str(state_path))
+        try:
+            traci.simulation.loadState(str(state_path))
+        except Exception as e:
+            print("Error reloading main simulation state, trying again...")
+            raise e
         print("Main simulation state reloaded.")
 
 
