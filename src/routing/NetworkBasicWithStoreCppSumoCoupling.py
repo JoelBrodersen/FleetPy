@@ -38,12 +38,17 @@ class NetworkBasicWithStoreCppSumoCoupling(NetworkBasicWithStoreCpp):
             self._set_edge_tt(edge_index_tuple[0], edge_index_tuple[1], new_tt) 
         print(f"Updated {len(new_travel_time_dict)} edges in FP Routing Engine with simulated values.")
 
-    def load_tt_file_SUMO(self, resultsPath,sim_time):
+    def load_tt_file_SUMO(self, resultsPath,sim_time, mode="real-time"):
         """
         loads new travel time files for scenario_time
         """
         if self._tt_infos_from_folder:
-            tt_file = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_{sim_time}.csv")
+            if mode == "real-time":
+                tt_file = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_{sim_time}.csv")
+            elif mode == "simulation_prediction":
+                tt_file = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_sim_pred_{sim_time}.csv")
+            else:
+                raise ValueError(f"Mode {mode} not recognized for loading travel times")
             self.cpp_router.updateEdgeTravelTimes(tt_file.encode())        
             print(f"SUMO Travel times loaded into cpp Router at step {sim_time}")
         

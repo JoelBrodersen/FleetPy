@@ -85,6 +85,8 @@ class SUMOFleetPyServer():
         scenario_cfgs = config.ScenarioConfig(self.fp_scenario_config_path)
         self.fp_to_sumo_veh_id_dict= {}
         self.sumo_to_fp_veh_id_dict = {}
+        self.g_sim_based_pred = True
+        self.g_sim_based_pred_horizon = 600  # seconds
 
     def _finalize_setup(self):
         self.g_end_time_setup = time.time()
@@ -209,7 +211,7 @@ class SUMOFleetPyServer():
                 "--time-to-teleport", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_TIME_TO_TELEPORT, 300)),
                 "--time-to-teleport.highways", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_TIME_TO_TELEPORT_HIGHWAYS, 0)),
                 "--eager-insert", str(self.fp_sim_env.scenario_parameters.get(G_SUMO_EAGER_INSERT, False)),
-
+                "route-steps",str(1)
                 ]    
      
         traci.start(sumoCmd)
@@ -339,16 +341,29 @@ class SUMOFleetPyServer():
             if sim_time%1==0 and self.g_update_fleetsim_traveltimes==True:
                 sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,sim_pos_dict=sim_pos_dict,res_list=res_list)
             
+
+            ## Sim-based Prediction of future travel times
+            if sim_time%self.g_sim_based_pred_horizon==0 and self.g_sim_based_pred==True:
+                sim_state_dir = os.path.join(self.fp_sim_env.dir_names[G_DIR_OUTPUT], "SUMOSimulationStates")
+                if not os.path.isdir(sim_state_dir):
+                    os.mkdir(sim_state_dir)
+                state_path = os.path.join(sim_state_dir,f"SUMOSimulationState_{sim_time}.xml")
+                traci.simulation.saveState(str(state_path))
+                print(f"Saved simulation state to {state_path}")
+                self._run_branch_simulation(state_path,start_step=sim_time)
+                pass
+
+
             # 5) send new travel times to fleetsim
-            if (sim_time%self.g_sumo_t_update==0) and self.g_update_fleetsim_traveltimes==True:
+            if (sim_time%self.g_sumo_t_update==0) and self.g_update_fleetsim_traveltimes==True and self.g_sim_based_pred==False:
                 time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
                 time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
-                self._save_tt_to_csv(time_df, sim_time)
+                self._save_tt_to_csv(time_df, sim_time, mode="real-time")
 
                 res_list = []  # Clear res_list to prevent unlimited growth
                 if self.g_update_fleetsim_traveltimes==True:
                     self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
-                    self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time)  
+                    self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="real-time")  
 
             # 6) collect the current positions of all fleet vehicles in SUMO
             vehicle_to_position_dict = self._get_current_vehicle_positions()
@@ -365,7 +380,54 @@ class SUMOFleetPyServer():
             step+=1
         traci.close()
         self._post_sim_evaluation()
-    
+
+
+        def _run_branch_simulation(self,state_path,start_step):
+            """
+            Runs a branch SUMO simulation starting from a saved state.
+
+            Parameters:
+                start_step (int): The step number from which the branch simulation starts.
+            """
+            sim_pos_dict = {} 
+            res_list = []  
+            try:
+                traci.simulation.loadState(str(state_path))
+                # Get vehicles that entered the simulation in this timestep
+                print(f"Branch simulation started from step {start_step}...")
+                vehicles_from_main = traci.vehicle.getIDList()
+                print(f"{len(vehicles_from_main)} Vehicles loaded from main simulation at step {start_step}")
+
+                # Branch simulation loop
+                for branch_step in range(self.g_sim_based_pred_horizon):
+                    loaded_vehicles = set(traci.simulation.getLoadedIDList())
+                    for loaded_vehicle in loaded_vehicles:
+                        if loaded_vehicle not in vehicles_from_main:
+                            traci.vehicle.remove(loaded_vehicle)
+                            
+                    
+                    sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,sim_pos_dict=sim_pos_dict,res_list=res_list)
+
+                    traci.simulationStep()
+
+                    current_step = start_step + branch_step + 1
+            except Exception as e:
+                print(f"An error occurred in branch simulation: {e}")
+            
+            time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
+            res_list = []  # Clear res_list to prevent unlimited growth
+            self._save_tt_to_csv(time_df, sim_time, mode="simulation_prediction")
+            time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
+            if self.g_update_fleetsim_traveltimes==True:
+                self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
+                self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="simulation_prediction")  
+
+            print(f"Branch at step {start_step} finished. Reloading main simulation state.")
+            #reload main simulation state
+            traci.simulation.loadState(str(state_path))
+
+
+
     def _post_sim_evaluation(self):
         t_stop = time.time()
         time_elapsed = t_stop - t_start
@@ -637,15 +699,21 @@ class SUMOFleetPyServer():
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
-    def _save_tt_to_csv(self,tt_df, sim_time):
+    def _save_tt_to_csv(self,tt_df, sim_time,mode="real-time"):
         resultsPath = self.fp_sim_env.dir_names[G_DIR_OUTPUT]
         if 'count' in tt_df.columns:
             tt_df.drop(columns="count",inplace=True)
         if not os.path.isdir(os.path.join(resultsPath, "EdgeTravelTimes")):
             os.mkdir(os.path.join(resultsPath, "EdgeTravelTimes")) 
-        save_path = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_{sim_time}.csv")
+        
+        if mode == "real-time":
+            save_path = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_{sim_time}.csv")
+        elif mode == "simulation_prediction":
+            save_path = os.path.join(resultsPath, "EdgeTravelTimes", f"SUMO_travel_times_sim_pred_{sim_time}.csv")
+        else:
+            raise ValueError(f"Mode {mode} not recognized for saving travel times")
         tt_df.to_csv(save_path)
-        LOG.debug(f"SUMO Traveltimes sent to FP saved at: {os.path.join(resultsPath, 'EdgeTravelTimes', f'SUMO_travel_times_{sim_time}.csv')}")
+        LOG.debug(f"SUMO Traveltimes sent to FP saved at: {save_path}")
 
 
     def _get_current_vehicle_positions(self):
