@@ -425,7 +425,7 @@ class SUMOFleetPyServer():
         if self.g_update_fleetsim_traveltimes==True:
             self.fp_sim_env.update_network_travel_times(time_update_dict, start_step)
             self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,start_step, mode="simulation_prediction")  
-        print(f"Branch at step {start_step} finished. Reloading main simulation state.")
+        print(f"Branch from step {start_step} to {current_step} finished. Reloading main simulation state.")
         #reload main simulation state
         traci.simulation.loadState(str(state_path))
 
@@ -591,7 +591,6 @@ class SUMOFleetPyServer():
         return sumoRoute
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
-        print(f"Getting current edge travel times at sim_time {sim_time} start_time {sim_start_time}")
         sim_vehicle_id_list = traci.vehicle.getIDList()
         sim_pos_dict[sim_time] = {}
         # Initialise the first time step
