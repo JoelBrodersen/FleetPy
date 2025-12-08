@@ -390,8 +390,8 @@ class SUMOFleetPyServer():
             start_step (int): The step number from which the branch simulation starts.
         """
         resultsPath = self.fp_sim_env.dir_names[G_DIR_OUTPUT]
-        sim_pos_dict = {} 
-        res_list = []  
+        sim_pos_dict_branch = {} 
+        res_list_branch  = []  
         try:
             traci.simulation.loadState(str(state_path))
             # Get vehicles that entered the simulation in this timestep
@@ -407,16 +407,17 @@ class SUMOFleetPyServer():
                         traci.vehicle.remove(loaded_vehicle)
                             
                     
-                sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict,res_list=res_list)
+                sim_pos_dict_branch,res_list_branch = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict_branch,res_list=res_list_branch)
 
                 traci.simulationStep()
 
                 current_step = start_step + branch_step + 1
         except Exception as e:
             print(f"An error occurred in branch simulation: {e}")
+            raise e
             
-        time_df = self._process_tt_data(res_list=res_list,sim_time=start_step)
-        res_list = []  # Clear res_list to prevent unlimited growth
+        time_df = self._process_tt_data(res_list=res_list_branch,sim_time=start_step)
+        res_list_branch = []  # Clear res_list to prevent unlimited growth
         self._save_tt_to_csv(time_df, start_step, mode="simulation_prediction")
         time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
         if self.g_update_fleetsim_traveltimes==True:
