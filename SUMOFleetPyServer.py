@@ -382,49 +382,49 @@ class SUMOFleetPyServer():
         self._post_sim_evaluation()
 
 
-        def _run_branch_simulation(self,state_path,start_step):
-            """
-            Runs a branch SUMO simulation starting from a saved state.
+    def _run_branch_simulation(self,state_path,start_step):
+        """
+        Runs a branch SUMO simulation starting from a saved state.
 
-            Parameters:
-                start_step (int): The step number from which the branch simulation starts.
-            """
-            sim_pos_dict = {} 
-            res_list = []  
-            try:
-                traci.simulation.loadState(str(state_path))
-                # Get vehicles that entered the simulation in this timestep
-                print(f"Branch simulation started from step {start_step}...")
-                vehicles_from_main = traci.vehicle.getIDList()
-                print(f"{len(vehicles_from_main)} Vehicles loaded from main simulation at step {start_step}")
+        Parameters:
+            start_step (int): The step number from which the branch simulation starts.
+        """
+        sim_pos_dict = {} 
+        res_list = []  
+        try:
+            traci.simulation.loadState(str(state_path))
+            # Get vehicles that entered the simulation in this timestep
+            print(f"Branch simulation started from step {start_step}...")
+            vehicles_from_main = traci.vehicle.getIDList()
+            print(f"{len(vehicles_from_main)} Vehicles loaded from main simulation at step {start_step}")
 
-                # Branch simulation loop
-                for branch_step in range(self.g_sim_based_pred_horizon):
-                    loaded_vehicles = set(traci.simulation.getLoadedIDList())
-                    for loaded_vehicle in loaded_vehicles:
-                        if loaded_vehicle not in vehicles_from_main:
-                            traci.vehicle.remove(loaded_vehicle)
+            # Branch simulation loop
+            for branch_step in range(self.g_sim_based_pred_horizon):
+                loaded_vehicles = set(traci.simulation.getLoadedIDList())
+                for loaded_vehicle in loaded_vehicles:
+                    if loaded_vehicle not in vehicles_from_main:
+                        traci.vehicle.remove(loaded_vehicle)
                             
                     
-                    sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,sim_pos_dict=sim_pos_dict,res_list=res_list)
+                sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,sim_pos_dict=sim_pos_dict,res_list=res_list)
 
-                    traci.simulationStep()
+                traci.simulationStep()
 
-                    current_step = start_step + branch_step + 1
-            except Exception as e:
-                print(f"An error occurred in branch simulation: {e}")
+                current_step = start_step + branch_step + 1
+        except Exception as e:
+            print(f"An error occurred in branch simulation: {e}")
             
-            time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
-            res_list = []  # Clear res_list to prevent unlimited growth
-            self._save_tt_to_csv(time_df, sim_time, mode="simulation_prediction")
-            time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
-            if self.g_update_fleetsim_traveltimes==True:
-                self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
-                self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="simulation_prediction")  
+        time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
+        res_list = []  # Clear res_list to prevent unlimited growth
+        self._save_tt_to_csv(time_df, sim_time, mode="simulation_prediction")
+        time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
+        if self.g_update_fleetsim_traveltimes==True:
+            self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
+            self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="simulation_prediction")  
 
-            print(f"Branch at step {start_step} finished. Reloading main simulation state.")
-            #reload main simulation state
-            traci.simulation.loadState(str(state_path))
+        print(f"Branch at step {start_step} finished. Reloading main simulation state.")
+        #reload main simulation state
+        traci.simulation.loadState(str(state_path))
 
 
 
