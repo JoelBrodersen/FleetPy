@@ -594,7 +594,6 @@ class SUMOFleetPyServer():
         print(f"Getting current edge travel times at sim_time {sim_time} start_time {sim_start_time}")
         sim_vehicle_id_list = traci.vehicle.getIDList()
         sim_pos_dict[sim_time] = {}
-        print(sim_pos_dict)
         # Initialise the first time step
         if sim_start_time == sim_time:
             for veh_id in sim_vehicle_id_list:
