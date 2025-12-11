@@ -85,8 +85,7 @@ class SUMOFleetPyServer():
         scenario_cfgs = config.ScenarioConfig(self.fp_scenario_config_path)
         self.fp_to_sumo_veh_id_dict= {}
         self.sumo_to_fp_veh_id_dict = {}
-        self.g_sim_based_pred = True
-        self.g_sim_based_pred_horizon = 600  # seconds
+
 
     def _finalize_setup(self):
         self.g_end_time_setup = time.time()
@@ -344,18 +343,7 @@ class SUMOFleetPyServer():
                                                                     res_list=res_list,
                                                                     sim_start_time=self.fp_sim_env.scenario_parameters.get(G_SIM_START_TIME))  ##sim_pos_dict: {sim_time:{veh_id:(edge,start_time_on_this_edge)}}
             
-
-            ## Sim-based Prediction of future travel times
-            if sim_time%self.g_sim_based_pred_horizon==0 and self.g_sim_based_pred==True:
-                sim_state_dir = os.path.join(self.fp_sim_env.dir_names[G_DIR_OUTPUT], "SUMOSimulationStates")
-                if not os.path.isdir(sim_state_dir):
-                    os.mkdir(sim_state_dir)
-                state_path = os.path.join(sim_state_dir,f"SUMOSimulationState_{sim_time}.xml")
-                traci.simulation.saveState(str(state_path))
-                print(f"Saved simulation state to {state_path}")
-                self._run_branch_simulation(state_path,start_step=sim_time)
-                
-
+            
 
             # 5) send new travel times to fleetsim
             if (sim_time%self.g_sumo_t_update==0) and self.g_update_fleetsim_traveltimes==True and self.g_sim_based_pred==False:
@@ -384,58 +372,6 @@ class SUMOFleetPyServer():
             step+=1
         traci.close()
         self._post_sim_evaluation()
-
-
-    def _run_branch_simulation(self,state_path,start_step):
-        """
-        Runs a branch SUMO simulation starting from a saved state.
-
-        Parameters:
-            start_step (int): The step number from which the branch simulation starts.
-        """
-        resultsPath = self.fp_sim_env.dir_names[G_DIR_OUTPUT]
-        sim_pos_dict_branch = {} 
-        res_list_branch  = []  
-        try:
-            traci.simulation.loadState(str(state_path))
-            # Get vehicles that entered the simulation in this timestep
-            print(f"Branch simulation started from step {start_step}...")
-            vehicles_from_main = traci.vehicle.getIDList()
-            print(f"{len(vehicles_from_main)} Vehicles loaded from main simulation at step {start_step}")
-
-            # Branch simulation loop
-            for branch_step in range(self.g_sim_based_pred_horizon):
-                loaded_vehicles = set(traci.simulation.getLoadedIDList())
-                for loaded_vehicle in loaded_vehicles:
-                    if loaded_vehicle not in vehicles_from_main:
-                        traci.vehicle.remove(loaded_vehicle)
-                            
-                sim_pos_dict_branch,res_list_branch = self._get_current_edge_tt(sim_time=start_step + branch_step ,sim_pos_dict=sim_pos_dict_branch,res_list=res_list_branch,sim_start_time=start_step)
-
-                traci.simulationStep()
-
-                current_step = start_step + branch_step + 1
-        except Exception as e:
-            print(f"An error occurred in branch simulation: {e}")
-            raise e
-            
-        time_df = self._process_tt_data(res_list=res_list_branch,sim_time=start_step)
-        res_list_branch = []  # Clear res_list to prevent unlimited growth
-        self._save_tt_to_csv(time_df, start_step, mode="simulation_prediction")
-        time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
-        if self.g_update_fleetsim_traveltimes==True:
-            self.fp_sim_env.update_network_travel_times(time_update_dict, start_step)
-            self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,start_step, mode="simulation_prediction")  
-        print(f"Branch from step {start_step} to {current_step} finished.")
-        #reload main simulation state
-        try:
-            traci.simulation.loadState(str(state_path))
-        except Exception as e:
-            print("Error reloading main simulation state, trying again...")
-            raise e
-        print("Main simulation state reloaded.")
-
-
 
     def _post_sim_evaluation(self):
         t_stop = time.time()
