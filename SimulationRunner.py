@@ -158,14 +158,14 @@ if __name__ == "__main__":
     # Get Arguments
     parser = argparse.ArgumentParser(description='Run FleetPy-SUMO Coupling.')
     parser.add_argument("--scenarios", "--sc", type=lambda s: [int(item) for item in s.split(',')], help="List of scenario IDs", default=None)
-    parser.add_argument('--study_name', type=str, default=None, help='Study name')
+    parser.add_argument('--study_name',"--s", type=str, default=None, help='Study name')
     parser.add_argument('--processes',"--p", type=int, default=None, help='Number of Processes')
-    parser.add_argument('--sim_network_name', type=str, default=None, help='Simulation Network Name')
+    parser.add_argument('--sim_network_name',"--n", type=str, default=None, help='Simulation Network Name')
     parser.add_argument('--sc_from', type=int, default=None, help='From Scenario...')
     parser.add_argument('--sc_to', type=int, default=None, help='To Scenario... (including)')
     parser.add_argument('--fp_path ', type=str, default=str(py_path.parent), help='Path to FleetPy repository')
     parser.add_argument('--fp_coupling_path ', type=str, default=str(py_path.parent.parent / "fleetpy_coupling"), help='Path to FleetPy Coupling repository')
-    parser.add_argument('--sumo-api', type=str, default="traci", help='Which SUMO API to use (traci or libsumo)')
+    parser.add_argument('--sumo-api',"--a", type=str, default="traci", help='Which SUMO API to use (traci or libsumo)')
     args = parser.parse_args()
     
     selected_scenarios =list(range(args.sc_from,args.sc_to+1)) if args.sc_from is not None and args.sc_to is not None else args.scenarios
