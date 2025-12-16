@@ -346,7 +346,7 @@ class SUMOFleetPyServer():
             
 
             # 5) send new travel times to fleetsim
-            if (sim_time%self.g_sumo_t_update==0) and self.g_update_fleetsim_traveltimes==True and self.g_sim_based_pred==False:
+            if (sim_time%self.g_sumo_t_update==0) and self.g_update_fleetsim_traveltimes==True:
                 print(f"Updating FleetPy travel times at sim_time {sim_time}")
                 time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
                 time_update_dict = dict(zip(zip(list(time_df["from_node"]),list(time_df["to_node"])),list(time_df["edge_tt"])))
@@ -625,6 +625,7 @@ class SUMOFleetPyServer():
             return pd.DataFrame(columns=['from_node', 'to_node', 'edge_tt', 'edge_var'])
         tt_df["edge_tt"] = tt_df["end_time"] - tt_df["starting_time"] ## No correction term needed
         tt_df = tt_df[tt_df['edge_tt'] > 1] 
+        #TODO remove bugfixing
         print(tt_df)
         tt_df = self._filter_by_fcd_mode(tt_df)  
         print(tt_df)
