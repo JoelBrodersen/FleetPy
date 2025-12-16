@@ -780,9 +780,9 @@ class SUMOFleetPyServer():
 
             ##Filte for specified FCO PV-Share
             fco_pv_share = float(fcd_mode.split("-")[1].split("_")[1])
-            pv_tt_df = tt_df[tt_df['veh_id'].str.startswith(('pv', 'dv'))]
-            number_of_fco_pvs = round(int(len(pv_tt_df)) * fco_pv_share)
-            pv_tt_df = pv_tt_df.sample(n=number_of_fco_pvs, random_state=seed)
+            pv_tt_df = tt_df[~tt_df['veh_id'].str.startswith('fp')]
+            number_of_fcd_providing_pvs = round(int(len(pv_tt_df)) * fco_pv_share)
+            pv_tt_df = pv_tt_df.sample(n=number_of_fcd_providing_pvs, random_state=seed)
             tt_df = pd.concat([sav_tt_df,pv_tt_df])
             return tt_df
 
