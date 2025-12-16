@@ -625,7 +625,10 @@ class SUMOFleetPyServer():
             return pd.DataFrame(columns=['from_node', 'to_node', 'edge_tt', 'edge_var'])
         tt_df["edge_tt"] = tt_df["end_time"] - tt_df["starting_time"] ## No correction term needed
         tt_df = tt_df[tt_df['edge_tt'] > 1] 
+        print(tt_df)
         tt_df = self._filter_by_fcd_mode(tt_df)  
+        print(tt_df)
+        breakpoint()
         tt_df = tt_df.groupby('edge_id').agg(edge_tt=('edge_tt', 'mean'), edge_var=('edge_tt', 'var'), count=('edge_tt', 'count')).reset_index()
         tt_df["edge_id"] = tt_df["edge_id"].apply(lambda x: self.g_sumo_edge_id_to_fs_edge.get(x, None))
         if 'edge_id' in tt_df.columns:
