@@ -655,14 +655,14 @@ class SUMOFleetPyServer():
             else:
                 k = np.clip(k, 1e-6, 1 - 1e-6)
                 print("Applying probabilistic reliable travel time adjustment with quantile ", self.fp_sim_env.scenario_parameters.get("k_quantile"))
-            tt_df["edge_tt"] = tt_df.apply(
-                lambda row: stats.norm.ppf(
-                    k,
-                    loc=row["edge_tt"],
-                    scale=np.sqrt(max(row["edge_var"], 0.0))
-                ),
-                axis=1
+            mask = tt_df["edge_var"].notna() & (tt_df["edge_var"] > 0)
+
+            tt_df.loc[mask, "edge_tt"] = stats.norm.ppf(
+                k,
+                loc=tt_df.loc[mask, "edge_tt"],
+                scale=np.sqrt(tt_df.loc[mask, "edge_var"])
             )
+
             print("NaNs:", tt_df["edge_tt"].isna().sum())
             print("Infs:", np.isinf(tt_df["edge_tt"]).sum())
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
