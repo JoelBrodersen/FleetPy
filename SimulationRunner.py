@@ -63,6 +63,10 @@ class SimulationRunner:
             sc_df["rerouting_sc"] = [row["rerouting_sc"]]
             sc_df["hybrid_router"] = [int(row["hybrid_router"])]
             sc_df["p_ref"] = [float(row["p_ref"])]
+            sc_df["reliable_tt_det"] = [int(row["reliable_tt_det"])]
+            sc_df["f_det"] = [float(row["f_det"])]
+            sc_df["reliable_tt_prob"] = [int(row["reliable_tt_prob"])]
+            sc_df["k_quantile"] = [float(row["k_quantile"])]
 
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/self.study_name/"scenarios"/f"{scenario_name}.csv", index=False)
