@@ -640,20 +640,24 @@ class SUMOFleetPyServer():
         tt_df["edge_var"]=tt_df['edge_var'].round(3)
         if self.fp_sim_env.scenario_parameters.get("hybrid_router") == 1:
             tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
-        print(tt_df)
         if self.fp_sim_env.scenario_parameters.get("reliable_tt_det") == 1:    
-            print("Applying deterministic reliable travel time factor adjustment")
+            f_det = self.fp_sim_env.scenario_parameters.get("f_det")
+            if f_det is None:
+                raise ValueError("f_det parameter is not set for reliable_tt_det adjustment")
+            else:
+                print("Applying deterministic reliable travel time adjustment with factor ", self.fp_sim_env.scenario_parameters.get("f_det"))
             tt_df["edge_tt"] = tt_df["edge_tt"]*float(self.fp_sim_env.scenario_parameters.get("f_det"))
         elif self.fp_sim_env.scenario_parameters.get("reliable_tt_prob") == 1:
-            print("Applying probabilistic reliable travel time adjustment")
             # Calculate k-th quantile assuming normal distribution
-            k = self.fp_sim_env.scenario_parameters.get("reliable_tt_quantile", 0.95)
+            k = self.fp_sim_env.scenario_parameters.get("k_quantile")
+            if k is None:
+                raise ValueError("k_quantile parameter is not set for reliable_tt_prob adjustment")
+            else:
+                print("Applying probabilistic reliable travel time adjustment with quantile ", self.fp_sim_env.scenario_parameters.get("k_quantile"))
             tt_df["edge_tt"] = tt_df.apply(
                 lambda row: stats.norm.ppf(k, loc=row["edge_tt"], scale=np.sqrt(row["edge_var"])),
                 axis=1
             )
-        print(tt_df)
-        breakpoint()
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
