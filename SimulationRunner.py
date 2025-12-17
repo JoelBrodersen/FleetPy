@@ -62,7 +62,7 @@ class SimulationRunner:
             sc_df['random_seed'] = [row['random_seed']]
             sc_df["rerouting_sc"] = [row["rerouting_sc"]]
             sc_df["hybrid_router"] = [int(row["hybrid_router"])]
-            sc_df["p_opt"] = [float(row["p_opt"])]
+            sc_df["p_ref"] = [float(row["p_ref"])]
 
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/self.study_name/"scenarios"/f"{scenario_name}.csv", index=False)
