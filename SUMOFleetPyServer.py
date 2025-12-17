@@ -626,10 +626,7 @@ class SUMOFleetPyServer():
         tt_df["edge_tt"] = tt_df["end_time"] - tt_df["starting_time"] ## No correction term needed
         tt_df = tt_df[tt_df['edge_tt'] > 1] 
         #TODO remove bugfixing
-        print(tt_df)
         tt_df = self._filter_by_fcd_mode(tt_df)  
-        print(tt_df)
-        breakpoint()
         tt_df = tt_df.groupby('edge_id').agg(edge_tt=('edge_tt', 'mean'), edge_var=('edge_tt', 'var'), count=('edge_tt', 'count')).reset_index()
         tt_df["edge_id"] = tt_df["edge_id"].apply(lambda x: self.g_sumo_edge_id_to_fs_edge.get(x, None))
         if 'edge_id' in tt_df.columns:
@@ -642,6 +639,10 @@ class SUMOFleetPyServer():
         tt_df["edge_var"]=tt_df['edge_var'].round(3)
         if self.fp_sim_env.scenario_parameters.get("hybrid_router") == 1:
             tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
+        if self.fp_sim_env.scenario_parameters.get("reliable_tt_det") == 1:    
+            pass
+        elif self.fp_sim_env.scenario_parameters.get("reliable_tt_prob") == 1:
+            pass
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
