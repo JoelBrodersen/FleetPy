@@ -640,6 +640,7 @@ class SUMOFleetPyServer():
         tt_df["edge_var"]=tt_df['edge_var'].round(3)
         if self.fp_sim_env.scenario_parameters.get("hybrid_router") == 1:
             tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
+        print(tt_df)
         if self.fp_sim_env.scenario_parameters.get("reliable_tt_det") == 1:    
             tt_df["edge_tt"] = tt_df["edge_tt"]*float(self.fp_sim_env.scenario_parameters.get("f_det"))
         elif self.fp_sim_env.scenario_parameters.get("reliable_tt_prob") == 1:
@@ -649,6 +650,8 @@ class SUMOFleetPyServer():
                 lambda row: stats.norm.ppf(k, loc=row["edge_tt"], scale=np.sqrt(row["edge_var"])),
                 axis=1
             )
+        print(tt_df)
+        breakpoint()
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
