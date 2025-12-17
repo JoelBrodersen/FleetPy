@@ -25,6 +25,7 @@ import src.evaluation.standard as eval
 from run_examples import run_scenarios
 import random
 import time
+from scipy import stats
 
 
 """ 
@@ -640,9 +641,14 @@ class SUMOFleetPyServer():
         if self.fp_sim_env.scenario_parameters.get("hybrid_router") == 1:
             tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
         if self.fp_sim_env.scenario_parameters.get("reliable_tt_det") == 1:    
-            pass
+            tt_df["edge_tt"] = tt_df["edge_tt"]*float(self.fp_sim_env.scenario_parameters.get("f_det"))
         elif self.fp_sim_env.scenario_parameters.get("reliable_tt_prob") == 1:
-            pass
+            # Calculate k-th quantile assuming normal distribution
+            k = self.fp_sim_env.scenario_parameters.get("reliable_tt_quantile", 0.95)
+            tt_df["edge_tt"] = tt_df.apply(
+                lambda row: stats.norm.ppf(k, loc=row["edge_tt"], scale=np.sqrt(row["edge_var"])),
+                axis=1
+            )
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
