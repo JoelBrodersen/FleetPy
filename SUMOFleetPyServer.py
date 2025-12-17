@@ -642,8 +642,10 @@ class SUMOFleetPyServer():
             tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
         print(tt_df)
         if self.fp_sim_env.scenario_parameters.get("reliable_tt_det") == 1:    
+            print("Applying deterministic reliable travel time factor adjustment")
             tt_df["edge_tt"] = tt_df["edge_tt"]*float(self.fp_sim_env.scenario_parameters.get("f_det"))
         elif self.fp_sim_env.scenario_parameters.get("reliable_tt_prob") == 1:
+            print("Applying probabilistic reliable travel time adjustment")
             # Calculate k-th quantile assuming normal distribution
             k = self.fp_sim_env.scenario_parameters.get("reliable_tt_quantile", 0.95)
             tt_df["edge_tt"] = tt_df.apply(
