@@ -662,9 +662,7 @@ class SUMOFleetPyServer():
                 loc=tt_df.loc[mask, "edge_tt"],
                 scale=np.sqrt(tt_df.loc[mask, "edge_var"])
             )
-
-            print("NaNs:", tt_df["edge_tt"].isna().sum())
-            print("Infs:", np.isinf(tt_df["edge_tt"]).sum())
+            
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
