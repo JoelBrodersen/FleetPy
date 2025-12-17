@@ -611,7 +611,7 @@ class SUMOFleetPyServer():
         tt_df.drop(columns=["Unnamed: 0", "index", "from_node_y", "to_node_y"], inplace=True,errors='ignore')
         tt_df.rename(columns={"from_node_x":"from_node","to_node_x":"to_node","edge_var_x":"edge_var"}, inplace=True)
         tt_df["edge_tt"] = tt_df["edge_tt_hybrid"].round(3)
-        print("Hybrid Router: ",f"alpha: {np.average(tt_df['hybrid_router_alpha'])}",f'avg p:{np.average(tt_df["p_fco"])}')
+        print("Hybrid Router: ",f"alpha: {np.average(tt_df['hybrid_router_alpha'])}",f'avg p:{np.average(tt_df["p_fcd"])}')
         tt_df = tt_df[["edge_tt", "edge_var", "from_node", "to_node"]]
         tt_df = tt_df.dropna(subset=['edge_tt'])
         tt_df["edge_var"] = tt_df["edge_var"].fillna(0)
