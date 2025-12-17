@@ -300,6 +300,7 @@ class SUMOFleetPyServer():
         last_time = -1
         while True:
             # 1) fleetpy time step  
+            sim_time = end_time + 1 
             sim_time = int(traci.simulation.getTime()) # sumo time in seconds
             if sim_time > end_time:
                 break
@@ -388,7 +389,7 @@ class SUMOFleetPyServer():
         evaluation_end_time = int(self.fp_sim_env.scenario_parameters.get(G_EVAL_INT_END,self.fp_sim_env.scenario_parameters.get(G_SIM_END_TIME)))
         
         eval.standard_evaluation(self.fp_sim_env.dir_names[G_DIR_OUTPUT], evaluation_start_time =evaluation_start_time, evaluation_end_time =evaluation_end_time, print_comments=True, dir_names_in = {})
-        eval.evaluate_folder(self.fp_sim_env.dir_names[G_DIR_OUTPUT],evaluation_start_time = evaluation_start_time, evaluation_end_time = evaluation_end_time, print_comments = False)
+        eval.evaluate_folder(self.fp_sim_env.dir_names[G_DIR_OUTPUT],evaluation_start_time = evaluation_start_time, evaluation_end_time = evaluation_end_time, print_comments = True)
         sys.stdout.flush()
 
     def  _update_routes_and_add_vehicles(self, sim_time):
