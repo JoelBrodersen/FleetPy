@@ -300,8 +300,8 @@ class SUMOFleetPyServer():
         last_time = -1
         while True:
             # 1) fleetpy time step  
-            sim_time = end_time + 1 
             sim_time = int(traci.simulation.getTime()) # sumo time in seconds
+            sim_time = end_time + 1 
             if sim_time > end_time:
                 break
             sim_time_float = traci.simulation.getTime()
