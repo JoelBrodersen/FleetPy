@@ -301,7 +301,6 @@ class SUMOFleetPyServer():
         while True:
             # 1) fleetpy time step  
             sim_time = int(traci.simulation.getTime()) # sumo time in seconds
-            sim_time = end_time + 1 
             if sim_time > end_time:
                 break
             sim_time_float = traci.simulation.getTime()
@@ -318,7 +317,6 @@ class SUMOFleetPyServer():
             arrivedVehicles_internal = self._update_routes_and_add_vehicles(sim_time)
 
             # 3) sumo time step
-
             try:
                 traci.simulationStep()
             except Exception as e:
