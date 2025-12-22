@@ -307,7 +307,6 @@ def standard_evaluation(output_dir, evaluation_start_time = None, evaluation_end
         op_var_costs = np.nan
         op_co2 = np.nan
         op_ext_em_costs = np.nan
-        breakpoint()
         if op_id >= 0:  #AMoD
             op_name = "MoD_{}".format(int(op_id))
             operator_attributes = list_operator_attributes[int(op_id)]
