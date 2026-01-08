@@ -25,6 +25,7 @@ op_max_detour_time_factor,40
 op_offer_time_window,
 op_add_constant_detour_time,
 op_max_constant_detour_time,
+op_init_veh_distribution, null
 op_min_detour_time_window,
 op_const_boarding_time,30
 op_add_boarding_time,0
