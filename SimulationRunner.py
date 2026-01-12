@@ -24,11 +24,12 @@ def get_current_max_key(FP_path):
 
 class SimulationRunner:
 
-    def __init__(self,selected_scenarios,study_name,sim_network_name,process_count):
+    def __init__(self,selected_scenarios,study_name,sim_network_name,process_count,sumo_api="traci"):
         self.selected_scenarios = selected_scenarios
         self.sim_network_name = sim_network_name
         self.study_name = study_name
         self.process_count = process_count
+        self.sumo_api = sumo_api
         self.py_path = pathlib.Path(__file__).resolve()
         sc_config = pd.read_csv(self.py_path.parent/"studies"/self.study_name/"simulation_parameters.csv")
         sc_config = sc_config.set_index('simulation_index')
@@ -45,8 +46,14 @@ class SimulationRunner:
            
             sc_df["scenario_name"] = [scenario_name]
             sc_df["op_module"] = ["PoolingIRSOnly"]
-            sc_df['rq_file'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}.csv"]
-            sc_df['demand_name'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}"]
+            if "rq_file" not in row.keys() or pd.isna(row['rq_file']):
+                sc_df['rq_file'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}.csv"]
+            else:
+                sc_df['rq_file'] = [row['rq_file']]
+            if "demand_name" not in row.keys() or pd.isna(row['demand_name']):
+                sc_df['demand_name'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}"]
+            else:
+                sc_df['demand_name'] = [row['demand_name']]
             sc_df['op_fleet_composition'] = [f"{row['vehtype']}:{row['fleet_size']}"]
             sc_df['network_type'] = [row['network_type']]
             sc_df['op_vr_control_func_dict'] = [f"func_key:{row['objective_function']};vot:{row.get('vot')};vor:{row.get('vor')};p_cstr_dt:{p_cstr_dt};p_cstr_wt:{p_cstr_wt}"]
@@ -90,15 +97,20 @@ class SimulationRunner:
 
 
     def run_fleetpy_sc(self,sc_index):
-        MOD_demand_subset = float(self.sc_config_file_dict[sc_index].get("MOD_demand_subset"))
-        if self.sc_config_file_dict[sc_index].get("rerouting_sc") == None or math.isnan(self.sc_config_file_dict[sc_index].get("rerouting_sc")):
-            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(MOD_demand_subset,2)}.sumocfg"
+        MOD_demand_subset = self.sc_config_file_dict[sc_index].get("MOD_demand_subset")
+        if MOD_demand_subset == None or pd.isna(MOD_demand_subset):
+            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}.sumocfg"
+
+        elif self.sc_config_file_dict[sc_index].get("rerouting_sc") == None or math.isnan(self.sc_config_file_dict[sc_index].get("rerouting_sc")):
+            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(float(MOD_demand_subset),2)}.sumocfg"
+        
+        
         else:
             rerouting_sc = self.sc_config_file_dict[sc_index].get("rerouting_sc")
 
             rerouting_sc = str(int(rerouting_sc))
             #rerouting_sc = str(int(self.sc_config_file_dict[sc_index].get("rerouting_sc").round()))
-            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(MOD_demand_subset,2)}_r_{rerouting_sc.zfill(3)}.sumocfg"
+            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(float(MOD_demand_subset),2)}_r_{rerouting_sc.zfill(3)}.sumocfg"
 
         
         command = [
@@ -109,7 +121,7 @@ class SimulationRunner:
             str(sumocfg_path),
             "sumo",
             "warning",
-            args.sumo_api
+            self.sumo_api
         ]
        # try:
         result = subprocess.run(command)
@@ -169,11 +181,11 @@ if __name__ == "__main__":
     parser.add_argument('--sc_to', type=int, default=None, help='To Scenario... (including)')
     parser.add_argument('--fp_path ', type=str, default=str(py_path.parent), help='Path to FleetPy repository')
     parser.add_argument('--fp_coupling_path ', type=str, default=str(py_path.parent.parent / "fleetpy_coupling"), help='Path to FleetPy Coupling repository')
-    parser.add_argument('--sumo-api',"--a", type=str, default="traci", help='Which SUMO API to use (traci or libsumo)')
+    parser.add_argument('--sumo_api',"--a", type=str, default="traci", help='Which SUMO API to use (traci or libsumo)')
     args = parser.parse_args()
-    
+    print(f"Arguments: {args}")
     selected_scenarios =list(range(args.sc_from,args.sc_to+1)) if args.sc_from is not None and args.sc_to is not None else args.scenarios
-    sim_runner = SimulationRunner(selected_scenarios=selected_scenarios,study_name=args.study_name,process_count=args.processes,sim_network_name=args.sim_network_name)
+    sim_runner = SimulationRunner(selected_scenarios=selected_scenarios,study_name=args.study_name,process_count=args.processes,sim_network_name=args.sim_network_name,sumo_api=args.sumo_api)
     sim_runner.create_sc_config_files()
     sim_runner.create_rerouting_xml_files()
     sim_runner.run_in_parallel()
