@@ -300,16 +300,15 @@ class SUMOFleetPyServer():
         last_time = -1
         while True:
             # 1) fleetpy time step  
-            sim_time = int(traci.simulation.getTime()) # sumo time in seconds
+            sim_time = traci.simulation.getTime()
             if sim_time > end_time:
                 break
-            sim_time_float = traci.simulation.getTime()
-            if sim_time_float % float(fp_time_step) == 0: # sumo time in seconds
+            if sim_time % float(fp_time_step) == 0: # sumo time in seconds
                 if sim_time != last_time: # avoid same time step again due to rounding
-                    LOG.info(f"---- FleetPy Step ----- {sim_time_float}")
-                    leg_status_dict = self.fp_sim_env.step(sim_time) # fleetpy timestep and computing new routes TODO: Implement Different step Sizes for SUMO and FP
+                    LOG.info(f"---- FleetPy Step ----- {sim_time}")
+                    leg_status_dict = self.fp_sim_env.step(int(sim_time)) 
                     last_time = sim_time
-                
+  
             if sim_time % 120 == 0:
                 print("{}: current simtime: {}/{}".format(self.fp_sim_env.scenario_parameters[G_SCENARIO_NAME], sim_time, end_time))
                            
