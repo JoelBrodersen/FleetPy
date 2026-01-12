@@ -2,8 +2,6 @@ Input_Parameter_Name,Parameter_Value
 ##1,FleetSimulation
 initial_state_scenario,
 sim_env,ImmediateDecisionsSimulation
-network_name,sumo_test_dyn_tt
-demand_name,test_demand
 study_name,fleetpy_sumo_coupling
 rq_file,
 random_seed,0
