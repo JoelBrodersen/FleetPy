@@ -38,6 +38,7 @@ def transform_demand_SUMO_to_fp(xmlfile,demand_type,nw_name):
     edges_df = pd.read_csv(nw_Path.joinpath("edges.csv"))
     edges_df = edges_df.set_index("source_edge_id", drop=False)
 
+
     request_ids = []
     rq_times = []
     start_nodes = []
@@ -65,7 +66,8 @@ def transform_demand_SUMO_to_fp(xmlfile,demand_type,nw_name):
                 rq_times.append(float(vehicle.get("depart")))
                 request_ids.append(count)
                 count += 1
-
+    else:
+        raise("Error with Route/Trip Type")
     fp_df = pd.DataFrame({"request_id":request_ids,"orig_id":orig_ids,"rq_time":rq_times,"start":start_nodes,"end":end_nodes})
     fp_df = fp_df.reset_index(drop=True)
     
