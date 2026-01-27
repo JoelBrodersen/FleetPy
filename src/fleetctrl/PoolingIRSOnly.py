@@ -296,6 +296,8 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
            offer_tt = float(self.f_det)*tt
         elif self.reliable_tt_prob == 1:
            offer_tt = self.normal_percentile(tt, var, float(self.k_quantile))
+        elif self.reliable_tt_prob == 1 and self.reliable_tt_det == 1:
+            raise ValueError("reliable_tt_prob and reliable_tt_det cannot both be 1")
         else:
            offer_tt = tt
         return offer_tt
