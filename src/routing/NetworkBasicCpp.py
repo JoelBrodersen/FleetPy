@@ -45,6 +45,7 @@ class NetworkBasicCpp(NetworkBasic):
         :type network_dynamics_file_name: str
         """
         self.cpp_router = None
+        self.edge_var_dict = {}
         super().__init__(network_name_dir, network_dynamics_file_name=network_dynamics_file_name, scenario_time=scenario_time)
 
     def loadNetwork(self, network_name_dir, network_dynamics_file_name=None, scenario_time=None):
@@ -63,6 +64,14 @@ class NetworkBasicCpp(NetworkBasic):
             f = self.travel_time_file_infos[scenario_time]
             tt_file = os.path.join(f, "edges_td_att.csv")
             self.cpp_router.updateEdgeTravelTimes(tt_file.encode())
+            tmp_df = pd.read_csv(tt_file)
+            if "edge_var" not in tmp_df.columns:
+                LOG.warning(f"edge_var column not found in travel time file {tt_file}, cannot update edge_var_dict")
+                return
+            tmp_df = tmp_df.set_index(['from_node', 'to_node'])
+            edge_var_update_dict = tmp_df['edge_var'].to_dict()
+            self.edge_var_dict.update(edge_var_update_dict)
+
 
     def return_travel_costs_1to1(self, origin_position, destination_position, customized_section_cost_function = None):
         """

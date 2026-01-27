@@ -1,5 +1,7 @@
 import logging
 import time
+import numpy as np
+from scipy.stats import norm
 
 from src.simulation.Offers import TravellerOffer
 from src.fleetctrl.FleetControlBase import FleetControlBase
@@ -54,6 +56,11 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         super().__init__(op_id, operator_attributes, list_vehicles, routing_engine, zone_system, scenario_parameters,
                          dir_names=dir_names, op_charge_depot_infra=op_charge_depot_infra, list_pub_charging_infra=list_pub_charging_infra)
         # TODO # make standard in FleetControlBase
+        self.reliable_tt_det = scenario_parameters.get('reliable_tt_det', 0)
+        self.f_det = scenario_parameters.get('f_det', None)
+        self.reliable_tt_prob = scenario_parameters.get('reliable_tt_prob', 0)
+        self.k_quantile = scenario_parameters.get('k_quantile',None)
+        self.vid_vehicle_obj_dict = {veh.vid: veh for veh in self.sim_vehicles}
         self.rid_to_assigned_vid = {} # rid -> vid
         self.pos_veh_dict = {}  # pos -> list_veh
         self.vr_ctrl_f = return_pooling_objective_function(operator_attributes[G_OP_VR_CTRL_F])
@@ -119,6 +126,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
             LOG.debug(f"reservation offer for rid {rid_struct} : {offer}")
         else:
             list_tuples = insertion_with_heuristics(sim_time, prq, self, force_feasible_assignment=True)
+
             if len(list_tuples) > 0:
                 (vid, vehplan, delta_cfv) = min(list_tuples, key=lambda x:x[2])
                 self.tmp_assignment[rid_struct] = vehplan
@@ -127,7 +135,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
             else:
                 LOG.debug(f"rejection for rid {rid_struct}")
                 self._create_rejection(prq, sim_time)
-                
+     
         if self.repo and not prq.get_reservation_flag():
             self.repo.register_user_request(prq, sim_time)
                             
@@ -241,6 +249,57 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         """
         return self.vr_ctrl_f(simulation_time, veh_obj, vehicle_plan, self.rq_dict, self.routing_engine)
 
+    def get_user_trip_segments(self, lst, o, d, assigned_veh_pos):
+        """
+        Splits the assigned PlanStops of a vehicle into the user trip segments:
+        - waiting_segment: from first element up to (and including) o --> Current Vehicle Position to Pick-Up
+        - driving_segment: from o up to (and including) d --> Pick-Up to Drop-Off
+        """
+        if o not in lst or d not in lst:
+            raise ValueError("o and d must both be in the input list")
+
+        o_idx = lst.index(o)
+        d_idx = lst.index(d)
+
+        if d_idx < o_idx:
+            raise ValueError("d must come after o in the list")
+
+        waiting_segment = [assigned_veh_pos] + lst[:o_idx + 1] 
+        driving_segment = lst[o_idx:d_idx + 1]
+
+        return waiting_segment, driving_segment
+
+    def normal_percentile(self,mu, var, k_quantile):
+        sigma = np.sqrt(var)
+        return mu + sigma * norm.ppf(k_quantile)
+
+    def get_user_trip_segment_tt_variance(self, user_trip_segment_nodes):
+
+            if len(user_trip_segment_nodes) < 2:
+                raise ValueError("User trip segment must contain at least 2 nodes")
+            user_trip_segment_path_nodes = []
+            ## Iterating over legs
+            segment_tt = 0
+            segment_var = 0
+            for i in range(len(user_trip_segment_nodes) - 1):
+                leg_tt = self.routing_engine.return_travel_costs_1to1(user_trip_segment_nodes[i], user_trip_segment_nodes[i + 1])
+                segment_tt += leg_tt[0]
+                leg_nodes = self.routing_engine.return_best_route_1to1(user_trip_segment_nodes[i], user_trip_segment_nodes[i + 1])
+                leg_edges = list(zip(leg_nodes, leg_nodes[1:]))
+                leg_var = sum([float(self.routing_engine.edge_var_dict.get((edge[0], edge[1]),0)) for edge in leg_edges])
+                segment_var += leg_var
+
+            return segment_tt, segment_var
+
+    def get_segment_offer_tt(self,tt, var):
+        if self.reliable_tt_det == 1:
+           offer_tt = float(self.f_det)*tt
+        elif self.reliable_tt_prob == 1:
+           offer_tt = self.normal_percentile(tt, var, float(self.k_quantile))
+        else:
+           offer_tt = tt
+        return offer_tt
+
     def _create_user_offer(self, prq, simulation_time, assigned_vehicle_plan=None, offer_dict_without_plan={}):
         """ creating the offer for a requests
 
@@ -257,10 +316,17 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         :rtype: TravellerOffer
         """
         if assigned_vehicle_plan is not None:
-            pu_time, do_time = assigned_vehicle_plan.pax_info.get(prq.get_rid_struct())
+            print(assigned_vehicle_plan)           
+            plan_stop_positions = [ps.get_pos() for ps in assigned_vehicle_plan.list_plan_stops]
+            assigned_veh_obj = self.vid_vehicle_obj_dict.get(assigned_vehicle_plan.vid)
+            waiting_segment, driving_segment = self.get_user_trip_segments(plan_stop_positions, prq.o_pos, prq.d_pos, assigned_veh_obj.pos)
+            waiting_tt, waiting_var =  self.get_user_trip_segment_tt_variance(waiting_segment)
+            driving_tt, driving_var =  self.get_user_trip_segment_tt_variance(driving_segment)
+            waiting_offer_tt = self.get_segment_offer_tt(waiting_tt, waiting_var)
+            driving_offer_tt = self.get_segment_offer_tt(driving_tt, driving_var)           
             # offer = {G_OFFER_WAIT: pu_time - simulation_time, G_OFFER_DRIVE: do_time - pu_time,
             #          G_OFFER_FARE: int(prq.init_direct_td * self.dist_fare + self.base_fare)}
-            offer = TravellerOffer(prq.get_rid_struct(), self.op_id, pu_time - prq.rq_time, do_time - pu_time,
+            offer = TravellerOffer(prq.get_rid_struct(), self.op_id, waiting_offer_tt,driving_offer_tt,
                                    self._compute_fare(simulation_time, prq, assigned_vehicle_plan))
             prq.set_service_offered(offer)  # has to be called
         else:

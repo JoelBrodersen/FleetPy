@@ -51,4 +51,10 @@ class NetworkBasicWithStoreCppSumoCoupling(NetworkBasicWithStoreCpp):
                 raise ValueError(f"Mode {mode} not recognized for loading travel times")
             self.cpp_router.updateEdgeTravelTimes(tt_file.encode())        
             print(f"SUMO Travel times loaded into cpp Router at step {sim_time}")
-        
+            tmp_df = pd.read_csv(tt_file)
+            if "edge_var" not in tmp_df.columns:
+                LOG.warning(f"edge_var column not found in travel time file {tt_file}, cannot update edge_var_dict")
+                return
+            tmp_df = tmp_df.set_index(['from_node', 'to_node'])
+            edge_var_update_dict = tmp_df['edge_var'].to_dict()
+            self.edge_var_dict.update(edge_var_update_dict)
