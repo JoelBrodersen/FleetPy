@@ -638,6 +638,7 @@ class SUMOFleetPyServer():
         tt_df["edge_var"]=tt_df['edge_var'].round(3)
         if self.fp_sim_env.scenario_parameters.get("hybrid_router") == 1:
             tt_df = self._get_hybrid_router_tt(tt_df,sim_time) 
+        """
         if self.fp_sim_env.scenario_parameters.get("reliable_tt_det") == 1:    
             f_det = self.fp_sim_env.scenario_parameters.get("f_det")
             if f_det is None:
@@ -660,7 +661,7 @@ class SUMOFleetPyServer():
                 loc=tt_df.loc[mask, "edge_tt"],
                 scale=np.sqrt(tt_df.loc[mask, "edge_var"])
             )
-            
+        """
         tt_df = tt_df[["from_node", "to_node", "edge_tt", "edge_var"]]
         return tt_df 
 
