@@ -47,11 +47,11 @@ class SimulationRunner:
             sc_df["scenario_name"] = [scenario_name]
             sc_df["op_module"] = ["PoolingIRSOnly"]
             if "rq_file" not in row.keys() or pd.isna(row['rq_file']):
-                sc_df['rq_file'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}.csv"]
+                sc_df['rq_file'] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}.csv"]
             else:
                 sc_df['rq_file'] = [row['rq_file']]
             if "demand_name" not in row.keys() or pd.isna(row['demand_name']):
-                sc_df['demand_name'] = [f"{row['demand_name']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}"]
+                sc_df['demand_name'] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}"]
             else:
                 sc_df['demand_name'] = [row['demand_name']]
             sc_df['op_fleet_composition'] = [f"{row['vehtype']}:{row['fleet_size']}"]
