@@ -317,8 +317,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         :return: offer for request
         :rtype: TravellerOffer
         """
-        if assigned_vehicle_plan is not None:
-            print(assigned_vehicle_plan)           
+        if assigned_vehicle_plan is not None:       
             plan_stop_positions = [ps.get_pos() for ps in assigned_vehicle_plan.list_plan_stops]
             assigned_veh_obj = self.vid_vehicle_obj_dict.get(assigned_vehicle_plan.vid)
             waiting_segment, driving_segment = self.get_user_trip_segments(plan_stop_positions, prq.o_pos, prq.d_pos, assigned_veh_obj.pos)
