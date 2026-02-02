@@ -68,6 +68,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         # others # TODO # standardize IRS assignment memory?
         self.tmp_assignment = {}  # rid -> VehiclePlan
         self._init_dynamic_fleetcontrol_output_key(G_FCTRL_CT_RQU)
+        self.scenario_parameters = scenario_parameters
 
     def receive_status_update(self, vid, simulation_time, list_finished_VRL, force_update=True):
         """This method can be used to update plans and trigger processes whenever a simulation vehicle finished some
@@ -249,23 +250,27 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         """
         return self.vr_ctrl_f(simulation_time, veh_obj, vehicle_plan, self.rq_dict, self.routing_engine)
 
-    def get_user_trip_segments(self, lst, o, d, assigned_veh_pos):
+    def get_user_trip_segments(self, plan_stop_positions, o, d, assigned_veh_pos):
         """
         Splits the assigned PlanStops of a vehicle into the user trip segments:
         - waiting_segment: from first element up to (and including) o --> Current Vehicle Position to Pick-Up
         - driving_segment: from o up to (and including) d --> Pick-Up to Drop-Off
         """
-        if o not in lst or d not in lst:
+        if o not in plan_stop_positions or d not in plan_stop_positions:
             raise ValueError("o and d must both be in the input list")
 
-        o_idx = lst.index(o)
-        d_idx = lst.index(d)
+        o_idx = plan_stop_positions.index(o)
+        d_idx = plan_stop_positions.index(d)
 
         if d_idx < o_idx:
             raise ValueError("d must come after o in the list")
-
-        waiting_segment = [assigned_veh_pos] + lst[:o_idx + 1] 
-        driving_segment = lst[o_idx:d_idx + 1]
+        if assigned_veh_pos != plan_stop_positions[0]:
+            waiting_segment = [assigned_veh_pos] + plan_stop_positions[:o_idx + 1] 
+        elif assigned_veh_pos == o:
+            waiting_segment = []
+        else:
+            waiting_segment = plan_stop_positions[:o_idx + 1]
+        driving_segment = plan_stop_positions[o_idx:d_idx + 1]
 
         return waiting_segment, driving_segment
 
@@ -289,6 +294,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
                 leg_var = sum([float(self.routing_engine.edge_var_dict.get((edge[0], edge[1]),0)) for edge in leg_edges])
                 segment_var += leg_var
 
+           
             return segment_tt, segment_var
 
     def get_segment_offer_tt(self,tt, var):
@@ -318,15 +324,61 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         :rtype: TravellerOffer
         """
         if assigned_vehicle_plan is not None:       
-            plan_stop_positions = [ps.get_pos() for ps in assigned_vehicle_plan.list_plan_stops]
             assigned_veh_obj = self.vid_vehicle_obj_dict.get(assigned_vehicle_plan.vid)
+
+            plan_stop_positions = [ps.get_pos() for ps in assigned_vehicle_plan.list_plan_stops]
             waiting_segment, driving_segment = self.get_user_trip_segments(plan_stop_positions, prq.o_pos, prq.d_pos, assigned_veh_obj.pos)
+
             waiting_tt, waiting_var =  self.get_user_trip_segment_tt_variance(waiting_segment)
             driving_tt, driving_var =  self.get_user_trip_segment_tt_variance(driving_segment)
+            
+
             waiting_offer_tt = self.get_segment_offer_tt(waiting_tt, waiting_var)
-            driving_offer_tt = self.get_segment_offer_tt(driving_tt, driving_var)           
+            driving_offer_tt = self.get_segment_offer_tt(driving_tt, driving_var)
+            print(f"Request {prq.get_rid_struct()} Transport Times - Waiting Segment: {waiting_offer_tt}, Driving Segment: {driving_offer_tt}")
+            
+            ## Add Boarding Times for in between stops in waiting and driving segments
+            waiting_offer_tt += max(0,float(self.scenario_parameters.get("op_const_boarding_time", 0))*(len(waiting_segment)-2)) # adding boarding times --> Pick-Up/Drop-Off Times from other requests 
+            driving_offer_tt += max(0,float(self.scenario_parameters.get("op_const_boarding_time", 0))*(len(driving_segment)-1)) # adding boarding times --> Pick-Up Time for Request included in driving time, drop-off time excluded
+            
+            ## Add Boarding Time before waiting segement can start
+            if assigned_vehicle_plan.list_plan_stops[0].started_at is not None:
+                remaining_boarding_time = float(self.scenario_parameters.get("op_const_boarding_time", 0)) - (simulation_time - assigned_vehicle_plan.list_plan_stops[0].started_at)
+                waiting_offer_tt += remaining_boarding_time
+            
+            ## If waiting time is zero and boarding already started at sane node
+            elif waiting_offer_tt == 0 and assigned_vehicle_plan.list_plan_stops[0].started_at is not None:
+                remaining_boarding_time = float(self.scenario_parameters.get("op_const_boarding_time", 0)) - (simulation_time - assigned_vehicle_plan.list_plan_stops[0].started_at)
+                driving_offer_tt += remaining_boarding_time
+
+            
+            
             # offer = {G_OFFER_WAIT: pu_time - simulation_time, G_OFFER_DRIVE: do_time - pu_time,
             #          G_OFFER_FARE: int(prq.init_direct_td * self.dist_fare + self.base_fare)}
+            pu_time, do_time = assigned_vehicle_plan.pax_info.get(prq.get_rid_struct())
+
+            waiting_offer_tt_old = pu_time - prq.rq_time
+            driving_time_tt_old = do_time - pu_time
+            
+            if abs(waiting_offer_tt_old - waiting_offer_tt) > 1e-5 or abs(driving_time_tt_old - driving_offer_tt) > 1e-5:
+                print(f"Simulation Time: {simulation_time}")
+                print(assigned_vehicle_plan.list_plan_stops)
+                print([ps.state for ps in assigned_vehicle_plan.list_plan_stops])
+                print([ps.pos for ps in assigned_vehicle_plan.list_plan_stops])
+                print([ps.boarding_dict for ps in assigned_vehicle_plan.list_plan_stops])
+                print([ps.direct_duration for ps in assigned_vehicle_plan.list_plan_stops])
+                print([ps._earliest_start_time for ps in assigned_vehicle_plan.list_plan_stops])   
+                print(waiting_segment)
+                print(self.get_segment_offer_tt(waiting_tt, waiting_var))
+                print(waiting_offer_tt)
+                print(driving_segment)
+                print(self.get_segment_offer_tt(driving_tt, driving_var))
+                print(driving_offer_tt)
+                print(f"Request {prq.get_rid_struct()} - Time difference detected!")
+                print(f"Request {prq.get_rid_struct()} - Waiting time old: {waiting_offer_tt_old}, new: {waiting_offer_tt}")
+                print(f"Request {prq.get_rid_struct()} - Driving time old: {driving_time_tt_old}, new: {driving_offer_tt}") 
+                raise ValueError("Time difference detected between offer and assigned vehicle plan!")
+            
             offer = TravellerOffer(prq.get_rid_struct(), self.op_id, waiting_offer_tt,driving_offer_tt,
                                    self._compute_fare(simulation_time, prq, assigned_vehicle_plan))
             prq.set_service_offered(offer)  # has to be called
