@@ -305,7 +305,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         elif self.reliable_tt_prob == 1 and self.reliable_tt_det == 1:
             raise ValueError("reliable_tt_prob and reliable_tt_det cannot both be 1")
         else:
-           offer_tt = tt
+           offer_tt = float(tt)
         return offer_tt
 
     def _create_user_offer(self, prq, simulation_time, assigned_vehicle_plan=None, offer_dict_without_plan={}):
@@ -350,8 +350,6 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
             elif waiting_offer_tt == 0 and assigned_vehicle_plan.list_plan_stops[0].started_at is not None:
                 remaining_boarding_time = float(self.scenario_parameters.get("op_const_boarding_time", 0)) - (simulation_time - assigned_vehicle_plan.list_plan_stops[0].started_at)
                 driving_offer_tt += remaining_boarding_time
-
-            
             
             # offer = {G_OFFER_WAIT: pu_time - simulation_time, G_OFFER_DRIVE: do_time - pu_time,
             #          G_OFFER_FARE: int(prq.init_direct_td * self.dist_fare + self.base_fare)}
@@ -359,7 +357,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
 
             waiting_offer_tt_old = pu_time - prq.rq_time
             driving_time_tt_old = do_time - pu_time
-            
+
             if abs(waiting_offer_tt_old - waiting_offer_tt) > 1e-5 or abs(driving_time_tt_old - driving_offer_tt) > 1e-5:
                 print(f"Simulation Time: {simulation_time}")
                 print(assigned_vehicle_plan.list_plan_stops)
