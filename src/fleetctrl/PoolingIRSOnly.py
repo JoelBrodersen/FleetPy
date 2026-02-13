@@ -335,7 +335,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
 
             waiting_offer_tt = self.get_segment_offer_tt(waiting_tt, waiting_var)
             driving_offer_tt = self.get_segment_offer_tt(driving_tt, driving_var)
-            print(f"Request {prq.get_rid_struct()} Transport Times - Waiting Segment: {waiting_offer_tt}, Driving Segment: {driving_offer_tt}")
+            #print(f"Request {prq.get_rid_struct()} Transport Times - Waiting Segment: {waiting_offer_tt}, Driving Segment: {driving_offer_tt}")
             
             ## Add Boarding Times for in between stops in waiting and driving segments
             waiting_offer_tt += max(0,float(self.scenario_parameters.get("op_const_boarding_time", 0))*(len(waiting_segment)-2)) # adding boarding times --> Pick-Up/Drop-Off Times from other requests 
