@@ -279,9 +279,10 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
         return mu + sigma * norm.ppf(k_quantile)
 
     def get_user_trip_segment_tt_variance(self, user_trip_segment_nodes):
-
-            if len(user_trip_segment_nodes) < 2:
+            if len(user_trip_segment_nodes) == 1:
                 raise ValueError("User trip segment must contain at least 2 nodes")
+            elif len(user_trip_segment_nodes) == 0:
+                return 0, 0
             user_trip_segment_path_nodes = []
             ## Iterating over legs
             segment_tt = 0
@@ -330,8 +331,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
             waiting_segment, driving_segment = self.get_user_trip_segments(plan_stop_positions, prq.o_pos, prq.d_pos, assigned_veh_obj.pos)
 
             waiting_tt, waiting_var =  self.get_user_trip_segment_tt_variance(waiting_segment)
-            driving_tt, driving_var =  self.get_user_trip_segment_tt_variance(driving_segment)
-            
+            driving_tt, driving_var =  self.get_user_trip_segment_tt_variance(driving_segment)            
 
             waiting_offer_tt = self.get_segment_offer_tt(waiting_tt, waiting_var)
             driving_offer_tt = self.get_segment_offer_tt(driving_tt, driving_var)
