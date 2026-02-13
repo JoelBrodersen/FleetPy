@@ -195,7 +195,7 @@ class SUMOFleetPyServer():
         sumoCmd = [self.sumo_binary, "-c", self.sumo_config_path ,
                 "--collision.action","warn",
                 "--begin",str(self.fp_sim_env.scenario_parameters.get(G_SIM_START_TIME)),
-                 "-a",EdgeDataCfgPath,
+                #"-a",EdgeDataCfgPath,
                 "--step-length","1",
                 "--tripinfo-output",TripInfoPath,
                 "--vehroute-output",vehRoutePath,
