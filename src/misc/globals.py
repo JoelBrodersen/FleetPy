@@ -282,6 +282,7 @@ G_SUMO_EAGER_INSERT = "sumo_eager-insert"
 G_SUMO_EDGE_DATA_INTERVAL = "sumo_edgeData.interval"
 G_SUMO_EDGE_DATA_WITH_INTERNAL = "sumo_edgeData.withInternal"
 G_SUMO_EDGE_DATA_EXCLUDE_EMPTY = "sumo_edgeData.excludeEmpty"
+G_SUMO_SIM_DECLINED_RQ = "sim_declined_rq"   # if True, number of declined requests in each time step will be recorded and written to output (currently only for SUMOcontrolledSim)
 
 # RPP fleetcontrol
 G_OP_PA_ASSTH = "op_parcel_assignment_threshold"

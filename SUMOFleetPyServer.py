@@ -86,7 +86,7 @@ class SUMOFleetPyServer():
         scenario_cfgs = config.ScenarioConfig(self.fp_scenario_config_path)
         self.fp_to_sumo_veh_id_dict= {}
         self.sumo_to_fp_veh_id_dict = {}
-
+        self.rejected_requests = set() 
 
     def _finalize_setup(self):
         self.g_end_time_setup = time.time()
@@ -241,7 +241,7 @@ class SUMOFleetPyServer():
         :param sumo_node_list --> [J1,J1,J2...]
         :param fs_edge_to_ff_tt --> (FP_START_NODE,FP_END_NODE): TRAVEL_TIME
         :param fs_edge_to_len --> (FP_START_NODE,FP_END_NODE): DISTANCE
-        :param fs_node_to_sumo_junction --> FP_Node: DUMO_JUNCTION
+        :param fs_node_to_sumo_junction --> FP_Node: SUMO_JUNCTION
         """
         nw_path = self.fp_sim_env.dir_names[G_DIR_NETWORK]
         edge_df = pd.read_csv(os.path.join(nw_path, "base", "edges.csv"))
@@ -275,6 +275,7 @@ class SUMOFleetPyServer():
         self.g_fs_edge_to_ff_tt = fs_edge_to_ff_tt
         self.g_fs_edge_to_len = fs_edge_to_len
         self.g_fs_node_to_sumo_junction =fs_node_to_sumo_junction
+        self.g_fp_edge_df = edge_df
         self._finalize_setup()
     
     def run_coupled_simulation(self):
@@ -311,11 +312,18 @@ class SUMOFleetPyServer():
   
             if sim_time % 120 == 0:
                 print("{}: current simtime: {}/{}".format(self.fp_sim_env.scenario_parameters[G_SCENARIO_NAME], sim_time, end_time))
-                           
-            # 2) check for new routes and finished boarding processes
+           
+            # 2) check for rejected requests --> PV replacement or Ignoring
+            if len(self.fp_sim_env.rejected_requests) > 0:
+               
+               self._handle_declined_requests(self.fp_sim_env.rejected_requests)
+               self.rejected_requests.update(self.fp_sim_env.rejected_requests)
+               self.fp_sim_env.rejected_requests.clear()
+
+            # 3) check for new routes and finished boarding processes
             arrivedVehicles_internal = self._update_routes_and_add_vehicles(sim_time)
 
-            # 3) sumo time step
+            # 4) sumo time step
             try:
                 traci.simulationStep()
             except Exception as e:
@@ -335,7 +343,7 @@ class SUMOFleetPyServer():
                         traci.vehicle.remove(veh_id)
                 raise e
 
-            # 4) get current vehicle positions and update travel time statistics (if needed)
+            # 5) get current vehicle positions and update travel time statistics (if needed)
             if sim_time%1==0 and self.g_update_fleetsim_traveltimes==True:
                 sim_pos_dict,res_list = self._get_current_edge_tt(sim_time=sim_time,
                                                                     sim_pos_dict=sim_pos_dict,
@@ -344,7 +352,7 @@ class SUMOFleetPyServer():
             
             
 
-            # 5) send new travel times to fleetsim
+            # 6) send new travel times to fleetsim
             if (sim_time%self.g_sumo_t_update==0) and self.g_update_fleetsim_traveltimes==True:
                 print(f"Updating FleetPy travel times at sim_time {sim_time}")
                 time_df = self._process_tt_data(res_list=res_list,sim_time=sim_time)
@@ -356,13 +364,13 @@ class SUMOFleetPyServer():
                     self.fp_sim_env.update_network_travel_times(time_update_dict, sim_time)
                     self.fp_sim_env.routing_engine.load_tt_file_SUMO(resultsPath,sim_time, mode="real-time")  
 
-            # 6) collect the current positions of all fleet vehicles in SUMO
+            # 7) collect the current positions of all fleet vehicles in SUMO
             vehicle_to_position_dict = self._get_current_vehicle_positions()
 
-            # 7) set the new positions in FleetPy
+            # 8) set the new positions in FleetPy
             self.fp_sim_env.update_vehicle_positions(vehicle_to_position_dict,sim_time)
 
-            # 8) check for vehicles that arrived at their destination
+            # 9) check for vehicles that arrived at their destination
             self._update_arrived_vehicles(arrivedVehicles_internal,int(sim_time))
 
             if self.sumo_binary == "sumo-gui":
@@ -388,6 +396,32 @@ class SUMOFleetPyServer():
         eval.standard_evaluation(self.fp_sim_env.dir_names[G_DIR_OUTPUT], evaluation_start_time =evaluation_start_time, evaluation_end_time =evaluation_end_time, print_comments=True, dir_names_in = {})
         eval.evaluate_folder(self.fp_sim_env.dir_names[G_DIR_OUTPUT],evaluation_start_time = evaluation_start_time, evaluation_end_time = evaluation_end_time, print_comments = True)
         sys.stdout.flush()
+
+    def _handle_declined_requests(self,rejected_requests):
+        
+        if self.fp_sim_env.scenario_parameters.get(G_SUMO_SIM_DECLINED_RQ) == "ignore" or self.fp_sim_env.scenario_parameters.get(G_SUMO_SIM_DECLINED_RQ) is None:
+            LOG.debug(f"Ignoring requests: {rejected_requests}")
+        elif self.fp_sim_env.scenario_parameters.get(G_SUMO_SIM_DECLINED_RQ) == "pv_replacement":
+            for req_id, req_obj in rejected_requests:
+                sumo_vid = f"pv_rpl_fp_rq_{req_id}"
+
+                if not self.g_fp_edge_df[self.g_fp_edge_df["from_node"]==req_obj.o_node].empty:
+                    sumo_o_edge = self.g_fp_edge_df[self.g_fp_edge_df["from_node"]==req_obj.o_node].iloc[0]["source_edge_id"]
+                else:
+                    raise ValueError(f"No edge found in FleetPy edge dataframe for origin node {req_obj.o_node} of request {req_id}")
+
+                if not self.g_fp_edge_df[self.g_fp_edge_df["to_node"]==req_obj.d_node].empty:
+                    sumo_d_edge = self.g_fp_edge_df[self.g_fp_edge_df["to_node"]==req_obj.d_node].iloc[0]["source_edge_id"]
+                else:                    
+                    raise ValueError(f"No edge found in FleetPy edge dataframe for destination node {req_obj.d_node} of request {req_id}")
+                
+                LOG.debug(f"PV Replacement for request {req_id} with SUMO vehicle {sumo_vid} from edge {sumo_o_edge} to edge {sumo_d_edge}")
+                
+                sumo_route = traci.simulation.findRoute(sumo_o_edge, sumo_d_edge).edges
+                traci.route.add(routeID=f"Route_{sumo_vid}", edges=sumo_route)
+                traci.vehicle.add(vehID=sumo_vid, routeID=f"Route_{sumo_vid}")
+        else:   
+            raise ValueError(f"Invalid option for {G_SUMO_SIM_DECLINED_RQ}: {self.fp_sim_env.scenario_parameters.get(G_SUMO_SIM_DECLINED_RQ)}. Valid options are: 'ignore', 'pv_replacement'")        
 
     def  _update_routes_and_add_vehicles(self, sim_time):
         '''This functions reads a dict of routes with vehicleIDs as strings (key) and a list of edge (value) and sets the vehicle routes accordingly ->(vehicleID, [e1,e2,e3])

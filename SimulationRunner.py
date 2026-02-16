@@ -55,6 +55,7 @@ class SimulationRunner:
             else:
                 sc_df['demand_name'] = [row['demand_name']]
             sc_df['op_fleet_composition'] = [f"{row['vehtype']}:{row['fleet_size']}"]
+            sc_df["sim_declined_rq"] = [str(row["sim_declined_rq"])]
             sc_df['network_type'] = [row['network_type']]
             sc_df['op_vr_control_func_dict'] = [f"func_key:{row['objective_function']};vot:{row.get('vot')};vor:{row.get('vor')};p_cstr_dt:{p_cstr_dt};p_cstr_wt:{p_cstr_wt}"]
             sc_df['sim_env'] = [row['sim_env']]
