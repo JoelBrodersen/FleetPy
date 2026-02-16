@@ -106,7 +106,6 @@ class SUMOcontrolledSim(FleetSimulationBase):
         for rid, rq_obj in list_undecided_travelers + list_new_traveler_rid_obj:
             LOG.debug(f'rid is {rid} and rq_obj is {rq_obj}')
             LOG.debug(f'range(self.n_op) {range(self.n_op)}')
-            print(f"Request {rid} with {rq_obj}: Checking offers from operators ...")
             for op_id in range(self.n_op):
                 LOG.debug(f'op_id {op_id}')
                 LOG.debug(f"Request {rid}: Checking AMoD option of operator {op_id} ...")
@@ -115,12 +114,10 @@ class SUMOcontrolledSim(FleetSimulationBase):
                 self.operators[op_id].user_request(rq_obj, sim_time)    
                 amod_offer = self.operators[op_id].get_current_offer(rid)
                 #LOG.debug(f'amod offer {amod_offer} ')
-                print(amod_offer)
                 if amod_offer is not None:
                     rq_obj.receive_offer(op_id, amod_offer, sim_time)
                     #LOG.debug(f'rq_obj.receive_offer(op_id, amod_offer, sim_time){rq_obj.receive_offer(op_id, amod_offer, sim_time)}')
                 if isinstance(amod_offer, Rejection):
-                    print(f"Operator {op_id} rejected request {rid}.")
                     self.rejected_requests.add((rid,rq_obj))
             self._rid_chooses_offer(rid, rq_obj, sim_time)
         # 4) periodically for waiting requests: run decision process -> possibly leave system (cancellation)
