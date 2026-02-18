@@ -329,6 +329,9 @@ class SUMOFleetPyServer():
                 loaded   = traci.simulation.getLoadedNumber()
                 running  = traci.vehicle.getIDCount()
                 LOG.info(f"SUMO step | sim_time={sim_time:.1f}  loaded={loaded}  running={running}")
+                if sim_time == 21677:
+                    traci.simulation.saveState(str(os.path.join(resultsPath, "SumoDumps", "simState_21677.xml.gz")))
+
                 if sim_time == 21679:
                     LOG.info(f"Removal at simtime: {traci.simulation.getTime()}")
                     LOG.info(f"Vehicles in Teleportation: {traci.vehicle.getTeleportingIDList()}")
