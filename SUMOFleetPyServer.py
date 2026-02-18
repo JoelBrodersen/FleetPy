@@ -325,6 +325,11 @@ class SUMOFleetPyServer():
 
             # 4) sumo time step
             try:
+                sim_time = traci.simulation.getTime()
+                loaded   = traci.simulation.getLoadedNumber()
+                running  = traci.vehicle.getIDCount()
+                LOG.debug(f"SUMO step | sim_time={sim_time:.1f}  loaded={loaded}  running={running}")
+
                 traci.simulationStep()
             except Exception as e:
                 LOG.exception("SUMO crashed")
