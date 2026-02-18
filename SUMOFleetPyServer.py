@@ -327,20 +327,11 @@ class SUMOFleetPyServer():
             try:
                 traci.simulationStep()
             except Exception as e:
-                LOG.info(f"Crash at simtime: {traci.simulation.getTime()}")
-                LOG.info(f"Vehicles in Simulation: {len(traci.vehicle.getIDList())}")
-                LOG.info(f"Vehicles in Teleportation: {traci.vehicle.getTeleportingIDList()}")
-                LOG.info(f"Pending Vehicles: {traci.simulation.getPendingVehicles()}")
-                LOG.info(f"Vehicles Starting Teleportation: {traci.simulation.getStartingTeleportIDList()}")
-                veh_speeds = [traci.vehicle.getSpeed(veh_id) for veh_id in traci.vehicle.getIDList()]
-                LOG.info(f"Average Speed of Vehicles in Simulation: {np.mean(veh_speeds)}")
-                for veh_id in traci.vehicle.getTeleportingIDList():
-                    LOG.info(f"Teleporting Vehicle: {veh_id} Route: {traci.vehicle.getRoute(veh_id)}")
-                    if veh_id.startswith("fp_"):
-                        veh_id_fp = self._sumo_v_id_to_fleetpy_v_id(veh_id)
-                        LOG.info(f"FP Position: {vehicle_to_position_dict.get(veh_id_fp, 'not in dict')}")
-                        LOG.info(f"Lane Position: {traci.vehicle.getLanePosition(veh_id)}")
-                        traci.vehicle.remove(veh_id)
+                LOG.exception("SUMO crashed")
+                try:
+                    traci.close()
+                except:
+                    pass
                 raise e
 
             # 5) get current vehicle positions and update travel time statistics (if needed)
