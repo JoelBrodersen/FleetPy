@@ -101,9 +101,14 @@ class SimulationRunner:
         MOD_demand_subset = self.sc_config_file_dict[sc_index].get("MOD_demand_subset")
         if MOD_demand_subset == None or pd.isna(MOD_demand_subset):
             sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}.sumocfg"
+        else:
+            if MOD_demand_subset == 1.0:
+                demand_subset_str = "1"
+            else:
+                demand_subset_str = str(round(float(MOD_demand_subset),2))
+        if self.sc_config_file_dict[sc_index].get("rerouting_sc") == None or math.isnan(self.sc_config_file_dict[sc_index].get("rerouting_sc")):
 
-        elif self.sc_config_file_dict[sc_index].get("rerouting_sc") == None or math.isnan(self.sc_config_file_dict[sc_index].get("rerouting_sc")):
-            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(float(MOD_demand_subset),2)}.sumocfg"
+            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{demand_subset_str}.sumocfg"
         
         
         else:
@@ -111,7 +116,7 @@ class SimulationRunner:
 
             rerouting_sc = str(int(rerouting_sc))
             #rerouting_sc = str(int(self.sc_config_file_dict[sc_index].get("rerouting_sc").round()))
-            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{round(float(MOD_demand_subset),2)}_r_{rerouting_sc.zfill(3)}.sumocfg"
+            sumocfg_path = self.py_path.parent.parent/"fleetpy_coupling"/"Simulation"/self.sim_network_name/"SUMO_Config"/f"{self.sim_network_name}_s_{str(self.sc_config_file_dict[sc_index]['random_seed']).zfill(2)}_{demand_subset_str}_r_{rerouting_sc.zfill(3)}.sumocfg"
 
         
         command = [
