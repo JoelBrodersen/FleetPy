@@ -354,7 +354,7 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
             # offer = {G_OFFER_WAIT: pu_time - simulation_time, G_OFFER_DRIVE: do_time - pu_time,
             #          G_OFFER_FARE: int(prq.init_direct_td * self.dist_fare + self.base_fare)}
             pu_time, do_time = assigned_vehicle_plan.pax_info.get(prq.get_rid_struct())
-
+            """
             waiting_offer_tt_old = pu_time - prq.rq_time
             driving_time_tt_old = do_time - pu_time
             if abs(waiting_offer_tt_old - waiting_offer_tt) > 1e-5 or abs(driving_time_tt_old - driving_offer_tt) > 1e-5:
@@ -374,8 +374,7 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
                 print(f"Request {prq.get_rid_struct()} - Time difference detected!")
                 print(f"Request {prq.get_rid_struct()} - Waiting time old: {waiting_offer_tt_old}, new: {waiting_offer_tt}")
                 print(f"Request {prq.get_rid_struct()} - Driving time old: {driving_time_tt_old}, new: {driving_offer_tt}") 
-                breakpoint()
-            
+            """
             offer = TravellerOffer(prq.get_rid_struct(), self.op_id, waiting_offer_tt,driving_offer_tt,
                                    self._compute_fare(simulation_time, prq, assigned_vehicle_plan))
             prq.set_service_offered(offer)  # has to be called
