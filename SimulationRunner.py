@@ -45,7 +45,7 @@ class SimulationRunner:
             p_cstr_wt = row.get('p_cstr_wt') if row.get('p_cstr_wt') is not None else 0
            
             sc_df["scenario_name"] = [scenario_name]
-            sc_df["op_module"] = ["PoolingIRSOnly"]
+            sc_df["op_module"] = [str(row["op_module"])]
             if "rq_file" not in row.keys() or pd.isna(row['rq_file']):
                 sc_df['rq_file'] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}.csv"]
             else:

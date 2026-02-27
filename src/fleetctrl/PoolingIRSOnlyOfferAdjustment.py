@@ -22,7 +22,7 @@ INPUT_PARAMETERS_PoolingInsertionHeuristicOnly = {
     "optional_modules": []
 }
 
-class PoolingInsertionHeuristicOnly(FleetControlBase):
+class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
     """This class applies an Insertion Heuristic, in which new requests are inserted in the currently assigned
     vehicle plans and the insertion with the best control objective value is selected.
 
@@ -357,7 +357,6 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
 
             waiting_offer_tt_old = pu_time - prq.rq_time
             driving_time_tt_old = do_time - pu_time
-
             if abs(waiting_offer_tt_old - waiting_offer_tt) > 1e-5 or abs(driving_time_tt_old - driving_offer_tt) > 1e-5:
                 print(f"Simulation Time: {simulation_time}")
                 print(assigned_vehicle_plan.list_plan_stops)
@@ -375,7 +374,7 @@ class PoolingInsertionHeuristicOnly(FleetControlBase):
                 print(f"Request {prq.get_rid_struct()} - Time difference detected!")
                 print(f"Request {prq.get_rid_struct()} - Waiting time old: {waiting_offer_tt_old}, new: {waiting_offer_tt}")
                 print(f"Request {prq.get_rid_struct()} - Driving time old: {driving_time_tt_old}, new: {driving_offer_tt}") 
-                raise ValueError("Time difference detected between offer and assigned vehicle plan!")
+                breakpoint()
             
             offer = TravellerOffer(prq.get_rid_struct(), self.op_id, waiting_offer_tt,driving_offer_tt,
                                    self._compute_fare(simulation_time, prq, assigned_vehicle_plan))
