@@ -250,29 +250,47 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
         """
         return self.vr_ctrl_f(simulation_time, veh_obj, vehicle_plan, self.rq_dict, self.routing_engine)
 
-    def get_user_trip_segments(self, plan_stop_positions, o, d, assigned_veh_pos):
+    def get_user_trip_segments(self, plan_stop_list, prq, assigned_veh_pos):
         """
         Splits the assigned PlanStops of a vehicle into the user trip segments:
         - waiting_segment: from first element up to (and including) o --> Current Vehicle Position to Pick-Up
         - driving_segment: from o up to (and including) d --> Pick-Up to Drop-Off
         """
-        if o not in plan_stop_positions or d not in plan_stop_positions:
+
+        #print(f"plan_stop_list: {plan_stop_list}")
+        prq_o_index = 0
+        prq_o_pos = None
+        prq_d_index = 0
+        prq_d_pos = None
+        for index, ps in enumerate(plan_stop_list):
+            if 1 in ps.boarding_dict: # check if any boarding is planned at this stop
+                if prq.get_rid_struct() in ps.boarding_dict[1]:
+                    #print(f"Found boarding stop for request {prq.get_rid_struct()} at index {index} with pos {ps.pos}")
+                    prq_o_index = index
+                    prq_o_pos = ps.pos
+    
+            if -1 in ps.boarding_dict: # check if any alighting is planned at this stop
+                if prq.get_rid_struct() in ps.boarding_dict[-1]: 
+                    #print(f"Found alighting stop for request {prq.get_rid_struct()} at index {index} with pos {ps.pos}")
+                    prq_d_index = index
+                    prq_d_pos = ps.pos
+  
+        plan_stop_positions = [ps.pos for ps in plan_stop_list]
+        if prq.o_pos not in plan_stop_positions or prq.d_pos not in plan_stop_positions:
             raise ValueError("o and d must both be in the input list")
 
-        o_idx = plan_stop_positions.index(o)
-        d_idx = plan_stop_positions.index(d)
 
-        if d_idx < o_idx:
+        if prq_d_index < prq_o_index:
             print(f"plan_stop_positions: {plan_stop_positions}")
-            print(f"o: {o}, d: {d}")
+            print(f"o: {prq_o_pos}, d: {prq_d_pos}")
             raise ValueError("d must come after o in the list")
         if assigned_veh_pos != plan_stop_positions[0]:
-            waiting_segment = [assigned_veh_pos] + plan_stop_positions[:o_idx + 1] 
-        elif assigned_veh_pos == o:
+            waiting_segment = [assigned_veh_pos] + plan_stop_positions[:prq_o_index + 1] 
+        elif assigned_veh_pos == prq_o_pos:
             waiting_segment = []
         else:
-            waiting_segment = plan_stop_positions[:o_idx + 1]
-        driving_segment = plan_stop_positions[o_idx:d_idx + 1]
+            waiting_segment = plan_stop_positions[:prq_o_index + 1]
+        driving_segment = plan_stop_positions[prq_o_index:prq_d_index + 1]
 
         return waiting_segment, driving_segment
 
@@ -329,9 +347,7 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
         if assigned_vehicle_plan is not None:       
             assigned_veh_obj = self.vid_vehicle_obj_dict.get(assigned_vehicle_plan.vid)
 
-            plan_stop_positions = [ps.get_pos() for ps in assigned_vehicle_plan.list_plan_stops]
-            print(f"Assigned vehicle plan for request {prq.get_rid_struct()}: {plan_stop_positions}")
-            waiting_segment, driving_segment = self.get_user_trip_segments(plan_stop_positions, prq.o_pos, prq.d_pos, assigned_veh_obj.pos)
+            waiting_segment, driving_segment = self.get_user_trip_segments(assigned_vehicle_plan.list_plan_stops, prq, assigned_veh_obj.pos)
 
             waiting_tt, waiting_var =  self.get_user_trip_segment_tt_variance(waiting_segment)
             driving_tt, driving_var =  self.get_user_trip_segment_tt_variance(driving_segment)            
