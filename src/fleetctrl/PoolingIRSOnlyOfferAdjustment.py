@@ -263,6 +263,8 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
         d_idx = plan_stop_positions.index(d)
 
         if d_idx < o_idx:
+            print(f"plan_stop_positions: {plan_stop_positions}")
+            print(f"o: {o}, d: {d}")
             raise ValueError("d must come after o in the list")
         if assigned_veh_pos != plan_stop_positions[0]:
             waiting_segment = [assigned_veh_pos] + plan_stop_positions[:o_idx + 1] 
@@ -328,6 +330,7 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
             assigned_veh_obj = self.vid_vehicle_obj_dict.get(assigned_vehicle_plan.vid)
 
             plan_stop_positions = [ps.get_pos() for ps in assigned_vehicle_plan.list_plan_stops]
+            print(f"Assigned vehicle plan for request {prq.get_rid_struct()}: {plan_stop_positions}")
             waiting_segment, driving_segment = self.get_user_trip_segments(plan_stop_positions, prq.o_pos, prq.d_pos, assigned_veh_obj.pos)
 
             waiting_tt, waiting_var =  self.get_user_trip_segment_tt_variance(waiting_segment)
