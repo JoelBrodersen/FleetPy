@@ -76,7 +76,7 @@ class SimulationRunner:
             sc_df["reliable_tt_prob"] = [int(row["reliable_tt_prob"])]
             sc_df["k_quantile"] = [float(row["k_quantile"])]
             sc_df["rtt_corr_add"] = [float(row["rtt_corr_add"])]
-
+            sc_df["op_max_wait_time"] = [float(row["op_max_wait_time"])]
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/self.study_name/"scenarios"/f"{scenario_name}.csv", index=False)
 
