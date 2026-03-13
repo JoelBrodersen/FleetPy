@@ -177,3 +177,4 @@ dmypy.json
 !studies/fleetpy_sumo_coupling_berlin/scenarios/constant_config.csv
 /studies/_fleetpy_sumo_coupling
 /studies/fleetpy_sumo_coupling/scenarios
+/studies/fleetpy_sumo_coupling_in2/scenarios
