@@ -412,6 +412,7 @@ class SUMOFleetPyServer():
                     sumo_o_edge_df = self.g_fp_edge_df[self.g_fp_edge_df["from_node"]==req_obj.o_node].copy()
                     sumo_o_edge_df = sumo_o_edge_df[~sumo_o_edge_df["source_edge_id"].fillna("").str.startswith(":")]
                     if sumo_o_edge_df.empty:
+                        print(f"No non-internal edge found in FleetPy edge dataframe for destination node {req_obj.d_node} of request {req_id}")
                         raise ValueError(f"No non-internal edge found in FleetPy edge dataframe for origin node {req_obj.o_node} of request {req_id}")
                     sumo_o_edge = sumo_o_edge_df.iloc[0]["source_edge_id"]
                 else:
@@ -421,6 +422,7 @@ class SUMOFleetPyServer():
                     sumo_d_edge_df = self.g_fp_edge_df[self.g_fp_edge_df["from_node"]==req_obj.d_node].copy()
                     sumo_d_edge_df = sumo_d_edge_df[~sumo_d_edge_df["source_edge_id"].fillna("").str.startswith(":")]
                     if sumo_d_edge_df.empty:
+                        print(f"No non-internal edge found in FleetPy edge dataframe for destination node {req_obj.d_node} of request {req_id}")
                         raise ValueError(f"No non-internal edge found in FleetPy edge dataframe for destination node {req_obj.d_node} of request {req_id}")
                     sumo_d_edge = sumo_d_edge_df.iloc[0]["source_edge_id"]
                 else:                    
