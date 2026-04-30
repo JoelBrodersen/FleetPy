@@ -82,6 +82,7 @@ class SimulationRunner:
                 sc_df["demand_name"] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}_rbsc_{str(int(row['routing_behavior_scenario'])).zfill(2)}"]
                 sc_df["rq_file"] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}_rbsc_{str(int(row['routing_behavior_scenario'])).zfill(2)}.csv"]
                 sc_df["rq_type"] = ["IndividualRoutingBehaviorRequest"]
+            sc_df["op_const_boarding_time"] = [float(row["op_const_boarding_time"])]
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/self.study_name/"scenarios"/f"{scenario_name}.csv", index=False)
 
