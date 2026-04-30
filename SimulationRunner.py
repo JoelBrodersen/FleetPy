@@ -77,6 +77,11 @@ class SimulationRunner:
             sc_df["k_quantile"] = [float(row["k_quantile"])]
             sc_df["rtt_corr_add"] = [float(row["rtt_corr_add"])]
             sc_df["op_max_wait_time"] = [float(row["op_max_wait_time"])]
+            sc_df["routing_behavior_scenario"] = [int(row["routing_behavior_scenario"]) if not pd.isna(row['routing_behavior_scenario']) else None]
+            if sc_df["routing_behavior_scenario"].values[0] is not None and not pd.isna(sc_df["routing_behavior_scenario"].values[0]):
+                sc_df["demand_name"] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}_rbsc_{str(int(row['routing_behavior_scenario'])).zfill(2)}"]
+                sc_df["rq_file"] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}_rbsc_{str(int(row['routing_behavior_scenario'])).zfill(2)}.csv"]
+                sc_df["rq_type"] = ["IndividualRoutingBehaviorRequest"]
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/self.study_name/"scenarios"/f"{scenario_name}.csv", index=False)
 

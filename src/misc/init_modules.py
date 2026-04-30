@@ -90,6 +90,7 @@ def get_src_request_modules():
     rm_dict["BrokerDecisionRequest"] = ("src.demand.TravelerModels", "BrokerDecisionRequest")
     rm_dict["UserDecisionRequest"] = ("src.demand.TravelerModels", "UserDecisionRequest")
     rm_dict["PreferredOperatorRequest"] = ("src.demand.TravelerModels", "PreferredOperatorRequest")
+    rm_dict["IndividualRoutingBehaviorRequest"] = ("src.demand.TravelerModels", "IndividualRoutingBehaviorRequest")
     # add development content
     if dev_content is not None:
         dev_rm_dict = dev_content.add_request_models()
@@ -101,6 +102,7 @@ def get_src_fleet_control_modules():
     op_dict = {}  # str -> (module path, class name)
     op_dict["PoolingIRSOnly"] = ("src.fleetctrl.PoolingIRSOnly", "PoolingInsertionHeuristicOnly")
     op_dict["PoolingIRSOnlyOfferAdjustment"] = ("src.fleetctrl.PoolingIRSOnlyOfferAdjustment", "PoolingInsertionHeuristicOnlyOfferAdjustment")
+    op_dict["PoolingIRSOnlyOfferAdjustmentIndividual"] = ("src.fleetctrl.PoolingIRSOnlyOfferAdjustmentIndividual", "PoolingInsertionHeuristicOnlyOfferAdjustmentIndividual")
     op_dict["PoolingIRSAssignmentBatchOptimization"] = ("src.fleetctrl.PoolingIRSBatchOptimization", "PoolingIRSAssignmentBatchOptimization")
     op_dict["RidePoolingBatchAssignmentFleetcontrol"] = ("src.fleetctrl.RidePoolingBatchAssignmentFleetcontrol", "RidePoolingBatchAssignmentFleetcontrol")
     op_dict["BrokerExChangeCtrl"] = ("src.fleetctrl.BrokerAndExchangeFleetControl", "BrokerExChangeCtrl")

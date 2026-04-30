@@ -342,6 +342,28 @@ class BasicRequest(RequestBase):
         else:
             LOG.error(f"not implemented {offer_str(self.offer)}")
 
+
+# -------------------------------------------------------------------------------------------------------------------- #
+
+INPUT_PARAMETERS_IndividualRoutingBehaviorRequest = {
+    "doc" : """This request class makes decisions based on individual routing behavior; it can be used to model more complex decision-making processes.""",
+    "inherit" : "RequestBase",
+    "input_parameters_mandatory": [],
+    "input_parameters_optional": [],
+    "mandatory_modules": [], 
+    "optional_modules": []
+}
+
+class IndividualRoutingBehaviorRequest(BasicRequest):
+    """This request only performs a mode choice based on if it recieved an offer or not.
+    if an offer is recieved, it accepts the offer
+    if multiple offers are recieved an error is thrown"""
+    type = "IndividualRoutingBehaviorRequest"
+
+    def __init__(self, rq_row, routing_engine, simulation_time_step, scenario_parameters):
+        super().__init__(rq_row, routing_engine, simulation_time_step, scenario_parameters)
+        self.routing_behavior_group = rq_row.get("routing_behavior_group", None)
+
 # -------------------------------------------------------------------------------------------------------------------- #
 
 INPUT_PARAMETERS_IndividualConstraintRequest = {

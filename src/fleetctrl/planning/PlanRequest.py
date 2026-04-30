@@ -107,6 +107,7 @@ class PlanRequest:
         self.status = G_PRQS_NO_OFFER
         self.expected_pickup_time = None
         self.expected_dropoff_time = None
+        self.routing_behavior_group = rq.routing_behavior_group if hasattr(rq, "routing_behavior_group") else None
 
     def __str__(self):
         return f"new PlanRequest: rid {self.rid}|{self.sub_rid_struct} at {self.rq_time} start {self.o_pos} dest" \
