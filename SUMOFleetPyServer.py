@@ -129,7 +129,6 @@ class SUMOFleetPyServer():
         
         SF = load_simulation_environment(scenario_cfgs[0])
         self.fp_scenario_config = scenario_cfgs[0]
-
         self.fp_sim_env = SF
 
         # Get interval in which new network statistics are gathered and sent to FleetPy to updated network (if not given, no statistics are gathered)
