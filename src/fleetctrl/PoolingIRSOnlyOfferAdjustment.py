@@ -5,15 +5,16 @@ from scipy.stats import norm
 
 from src.simulation.Offers import TravellerOffer
 from src.fleetctrl.FleetControlBase import FleetControlBase
+from src.fleetctrl.PoolingIRSOnly import PoolingInsertionHeuristicOnly
+
 from src.fleetctrl.planning.PlanRequest import PlanRequest
 from src.fleetctrl.pooling.objectives import return_pooling_objective_function
 from src.fleetctrl.pooling.immediate.insertion import insertion_with_heuristics
 from src.misc.globals import *
-
 LOG = logging.getLogger(__name__)
 LARGE_INT = 100000
 
-INPUT_PARAMETERS_PoolingInsertionHeuristicOnly = {
+INPUT_PARAMETERS_PoolingInsertionHeuristicOnlyOfferAdjustment = {
     "doc" : "this class represents a ride-pooling MoD-operator. the operators uses an insertion heuristic for assignment",
     "inherit" : "FleetControlBase",
     "input_parameters_mandatory": [],
@@ -22,15 +23,13 @@ INPUT_PARAMETERS_PoolingInsertionHeuristicOnly = {
     "optional_modules": []
 }
 
-class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
-    """This class applies an Insertion Heuristic, in which new requests are inserted in the currently assigned
-    vehicle plans and the insertion with the best control objective value is selected.
+class PoolingInsertionHeuristicOnlyOfferAdjustment(PoolingInsertionHeuristicOnly):
+    """This class extends the PoolingInsertionHeuristicOnly class to include offer adjustment functionality.
 
     IMPORTANT NOTE:
     Both the new and the previously assigned plan are stored and await an instant response of the request. Therefore,
     this fleet control module is only consistent for the ImmediateOfferSimulation class.
     """
-    # TODO # clarify dependency to fleet simulation module
     def __init__(self, op_id, operator_attributes, list_vehicles, routing_engine, zone_system, scenario_parameters,
                  dir_names, op_charge_depot_infra=None, list_pub_charging_infra= []):
         """The specific attributes for the fleet control module are initialized. Strategy specific attributes are
@@ -55,41 +54,17 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
         """
         super().__init__(op_id, operator_attributes, list_vehicles, routing_engine, zone_system, scenario_parameters,
                          dir_names=dir_names, op_charge_depot_infra=op_charge_depot_infra, list_pub_charging_infra=list_pub_charging_infra)
+
+        
         # TODO # make standard in FleetControlBase
+
+        ## New attributes for offer adjustment:
         self.reliable_tt_det = scenario_parameters.get('reliable_tt_det', 0)
         self.f_det = scenario_parameters.get('f_det', None)
         self.reliable_tt_prob = scenario_parameters.get('reliable_tt_prob', 0)
         self.k_quantile = scenario_parameters.get('k_quantile',None)
         self.vid_vehicle_obj_dict = {veh.vid: veh for veh in self.sim_vehicles}
-        self.rid_to_assigned_vid = {} # rid -> vid
-        self.pos_veh_dict = {}  # pos -> list_veh
-        self.vr_ctrl_f = return_pooling_objective_function(operator_attributes[G_OP_VR_CTRL_F])
-        self.sim_time = scenario_parameters[G_SIM_START_TIME]
-        # others # TODO # standardize IRS assignment memory?
-        self.tmp_assignment = {}  # rid -> VehiclePlan
-        self._init_dynamic_fleetcontrol_output_key(G_FCTRL_CT_RQU)
         self.scenario_parameters = scenario_parameters
-
-    def receive_status_update(self, vid, simulation_time, list_finished_VRL, force_update=True):
-        """This method can be used to update plans and trigger processes whenever a simulation vehicle finished some
-         VehicleRouteLegs.
-
-        :param vid: vehicle id
-        :type vid: int
-        :param simulation_time: current simulation time
-        :type simulation_time: float
-        :param list_finished_VRL: list of VehicleRouteLeg objects
-        :type list_finished_VRL: list
-        :param force_update: indicates if also current vehicle plan feasibilities have to be checked
-        :type force_update: bool
-        """
-        super().receive_status_update(vid, simulation_time, list_finished_VRL, force_update=force_update)
-        veh_obj = self.sim_vehicles[vid]
-        try:
-            self.pos_veh_dict[veh_obj.pos].append(veh_obj)
-        except KeyError:
-            self.pos_veh_dict[veh_obj.pos] = [veh_obj]
-        LOG.debug(f"veh {veh_obj} | after status update: {self.veh_plans[vid]}")
 
     def user_request(self, rq, sim_time):
         """This method is triggered for a new incoming request. It generally adds the rq to the database. It has to
@@ -149,106 +124,6 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
             new_dt = old_dt + dt
         output_dict = {G_FCTRL_CT_RQU: new_dt}
         self._add_to_dynamic_fleetcontrol_output(sim_time, output_dict)
-
-    def user_confirms_booking(self, rid, simulation_time):
-        """This method is used to confirm a customer booking. This can trigger some database processes.
-
-        :param rid: request id
-        :type rid: int
-        :param simulation_time: current simulation time
-        :type simulation_time: float
-        """
-        super().user_confirms_booking(rid, simulation_time)
-        LOG.debug(f"user confirms booking {rid} at {simulation_time}")
-        prq = self.rq_dict[rid]
-        if prq.get_reservation_flag():
-            self.reservation_module.user_confirms_booking(rid, simulation_time)
-        else:
-            new_vehicle_plan = self.tmp_assignment[rid]
-            vid = new_vehicle_plan.vid
-            veh_obj = self.sim_vehicles[vid]
-            self.assign_vehicle_plan(veh_obj, new_vehicle_plan, simulation_time)
-            del self.tmp_assignment[rid]
-
-    def user_cancels_request(self, rid, simulation_time):
-        """This method is used to confirm a customer cancellation. This can trigger some database processes.
-
-        :param rid: request id
-        :type rid: int
-        :param simulation_time: current simulation time
-        :type simulation_time: float
-        """
-        LOG.debug(f"user cancels request {rid} at {simulation_time}")
-        prq = self.rq_dict[rid]
-        if prq.get_reservation_flag():
-            self.reservation_module.user_cancels_request(rid, simulation_time)
-        else:
-            prev_assignment = self.tmp_assignment.get(rid)
-            if prev_assignment:
-                del self.tmp_assignment[rid]
-        del self.rq_dict[rid]
-
-    def acknowledge_boarding(self, rid, vid, simulation_time):
-        """This method can trigger some database processes whenever a passenger is starting to board a vehicle.
-
-        :param rid: request id
-        :type rid: int
-        :param vid: vehicle id
-        :type vid: int
-        :param simulation_time: current simulation time
-        :type simulation_time: float
-        """
-        LOG.debug(f"acknowledge boarding {rid} in {vid} at {simulation_time}")
-        self.rq_dict[rid].set_pickup(vid, simulation_time)
-
-    def acknowledge_alighting(self, rid, vid, simulation_time):
-        """This method can trigger some database processes whenever a passenger is finishing to alight a vehicle.
-
-        :param rid: request id
-        :type rid: int
-        :param vid: vehicle id
-        :type vid: int
-        :param simulation_time: current simulation time
-        :type simulation_time: float
-        """
-        LOG.debug(f"acknowledge alighting {rid} from {vid} at {simulation_time}")
-        del self.rq_dict[rid]
-        del self.rid_to_assigned_vid[rid]
-
-    def _prq_from_reservation_to_immediate(self, rid, sim_time):
-        """This method is triggered when a reservation request becomes an immediate request.
-        All database relevant methods can be triggered from here.
-
-        :param rid: request id
-        :param sim_time: current simulation time
-        :return: None
-        """
-        LOG.debug(f"activate {rid} for global optimisation at time {sim_time}!")
-        self.rq_dict[rid].set_reservation_flag(False)
-
-    def _call_time_trigger_request_batch(self, simulation_time):
-        """This method can be used to perform time-triggered proccesses, e.g. the optimization of the current
-        assignments of simulation vehicles of the fleet.
-
-        :param simulation_time: current simulation time
-        :type simulation_time: float
-        """
-        self.sim_time = simulation_time
-        self.pos_veh_dict = {}  # pos -> list_veh
-
-    def compute_VehiclePlan_utility(self, simulation_time, veh_obj, vehicle_plan):
-        """This method computes the utility of a given plan and returns the value.
-
-        :param simulation_time: current simulation time
-        :type simulation_time: float
-        :param veh_obj: vehicle object
-        :type veh_obj: SimulationVehicle
-        :param vehicle_plan: vehicle plan in question
-        :type vehicle_plan: VehiclePlan
-        :return: utility of vehicle plan
-        :rtype: float
-        """
-        return self.vr_ctrl_f(simulation_time, veh_obj, vehicle_plan, self.rq_dict, self.routing_engine)
 
     def get_user_trip_segments(self, plan_stop_list, prq, assigned_veh_pos):
         """
@@ -318,13 +193,14 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
            
             return segment_tt, segment_var
 
-    def get_segment_offer_tt(self,tt, var):
-        if self.reliable_tt_det == 1:
+    def get_segment_offer_tt(self, prq, tt, var):
+        if (self.reliable_tt_prob == 1 and self.reliable_tt_det == 1):
+            raise ValueError("reliable_tt_prob and reliable_tt_det cannot both be 1 or 0")
+        elif self.reliable_tt_det == 1:
            offer_tt = float(self.f_det)*tt
         elif self.reliable_tt_prob == 1:
            offer_tt = self.normal_percentile(tt, var, float(self.k_quantile))
-        elif self.reliable_tt_prob == 1 and self.reliable_tt_det == 1:
-            raise ValueError("reliable_tt_prob and reliable_tt_det cannot both be 1")
+
         else:
            offer_tt = float(tt)
         return offer_tt
@@ -352,8 +228,8 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
             waiting_tt, waiting_var =  self.get_user_trip_segment_tt_variance(waiting_segment)
             driving_tt, driving_var =  self.get_user_trip_segment_tt_variance(driving_segment)            
 
-            waiting_offer_tt = self.get_segment_offer_tt(waiting_tt, waiting_var)
-            driving_offer_tt = self.get_segment_offer_tt(driving_tt, driving_var)
+            waiting_offer_tt = self.get_segment_offer_tt(prq,waiting_tt, waiting_var)
+            driving_offer_tt = self.get_segment_offer_tt(prq,driving_tt, driving_var)
             #print(f"Request {prq.get_rid_struct()} Transport Times - Waiting Segment: {waiting_offer_tt}, Driving Segment: {driving_offer_tt}")
             
             ## Add Boarding Times for in between stops in waiting and driving segments
@@ -373,54 +249,13 @@ class PoolingInsertionHeuristicOnlyOfferAdjustment(FleetControlBase):
             # offer = {G_OFFER_WAIT: pu_time - simulation_time, G_OFFER_DRIVE: do_time - pu_time,
             #          G_OFFER_FARE: int(prq.init_direct_td * self.dist_fare + self.base_fare)}
             pu_time, do_time = assigned_vehicle_plan.pax_info.get(prq.get_rid_struct())
-            """
-            waiting_offer_tt_old = pu_time - prq.rq_time
-            driving_time_tt_old = do_time - pu_time
-            if abs(waiting_offer_tt_old - waiting_offer_tt) > 1e-5 or abs(driving_time_tt_old - driving_offer_tt) > 1e-5:
-                print(f"Simulation Time: {simulation_time}")
-                print(assigned_vehicle_plan.list_plan_stops)
-                print([ps.state for ps in assigned_vehicle_plan.list_plan_stops])
-                print([ps.pos for ps in assigned_vehicle_plan.list_plan_stops])
-                print([ps.boarding_dict for ps in assigned_vehicle_plan.list_plan_stops])
-                print([ps.direct_duration for ps in assigned_vehicle_plan.list_plan_stops])
-                print([ps._earliest_start_time for ps in assigned_vehicle_plan.list_plan_stops])   
-                print(waiting_segment)
-                print(self.get_segment_offer_tt(waiting_tt, waiting_var))
-                print(waiting_offer_tt)
-                print(driving_segment)
-                print(self.get_segment_offer_tt(driving_tt, driving_var))
-                print(driving_offer_tt)
-                print(f"Request {prq.get_rid_struct()} - Time difference detected!")
-                print(f"Request {prq.get_rid_struct()} - Waiting time old: {waiting_offer_tt_old}, new: {waiting_offer_tt}")
-                print(f"Request {prq.get_rid_struct()} - Driving time old: {driving_time_tt_old}, new: {driving_offer_tt}") 
-            """
+           
             offer = TravellerOffer(prq.get_rid_struct(), self.op_id, waiting_offer_tt,driving_offer_tt,
                                    self._compute_fare(simulation_time, prq, assigned_vehicle_plan))
             prq.set_service_offered(offer)  # has to be called
         else:
             offer = self._create_rejection(prq, simulation_time)
         return offer
-
-    def change_prq_time_constraints(self, sim_time, rid, new_lpt, new_ept=None):
-        """This method should be called when the hard time constraints of a customer should be changed.
-        It changes the PlanRequest attributes. Moreover, this method called on child classes should adapt the
-        PlanStops of VehiclePlans containing this PlanRequest and recheck feasibility. The VehiclePlan method
-        update_prq_hard_constraints() can be used for this purpose.
-
-        :param sim_time: current simulation time
-        :param rid: request id
-        :param new_lpt: new latest pickup time, None is ignored
-        :param new_ept: new earliest pickup time, None is ignored
-        :return: None
-        """
-        LOG.debug("change time constraints for rid {}".format(rid))
-        prq = self.rq_dict[rid]
-        prq.set_new_pickup_time_constraint(new_lpt, new_earliest_pu_time=new_ept)
-        ass_vid = self.rid_to_assigned_vid.get(rid)
-        if ass_vid is not None:
-            self.veh_plans[ass_vid].update_prq_hard_constraints(self.sim_vehicles[ass_vid], sim_time,
-                                                                self.routing_engine, prq, new_lpt, new_ept=new_ept,
-                                                                keep_feasible=True)
 
     def assign_vehicle_plan(self, veh_obj, vehicle_plan, sim_time, force_assign=False, assigned_charging_task=None, add_arg=None):
         super().assign_vehicle_plan(veh_obj, vehicle_plan, sim_time, force_assign=force_assign, assigned_charging_task=assigned_charging_task, add_arg=add_arg)
