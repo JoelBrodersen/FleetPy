@@ -65,18 +65,23 @@ class PoolingInsertionHeuristicOnlyOfferAdjustmentIndividual(PoolingInsertionHeu
         if prq.routing_behavior_group is None:
             raise ValueError(f"Routing behavior group is not defined for prq {prq.rid}.")
         else:
-            routing_behavior_group_params = prq.routing_behavior_group.split("_")
+            for rb_group_config in self.scenario_parameters["routing_behavior_config"]:
+                if rb_group_config["key"] == prq.routing_behavior_group:
+                    rb_group_key = rb_group_config["key"]
+                    rb_group_share = rb_group_config["share"]
+                    rb_group_tt_adjustment = rb_group_config["tt_adjustment"]
+                    break
 
+        tt_adjustment_params = rb_group_tt_adjustment.split("_")
         ## Deterministic adjustment
-        if routing_behavior_group_params[0] == "det" and len(routing_behavior_group_params) == 2:
-            offer_tt = float(routing_behavior_group_params[1])*tt
+        if tt_adjustment_params[0] == "det" and len(tt_adjustment_params) == 2:
+            offer_tt = float(tt_adjustment_params[1])*tt
         ## Probabilistic adjustment
-        elif routing_behavior_group_params[0] == "prob" and len(routing_behavior_group_params) == 2:
-            offer_tt = self.normal_percentile(tt, var, float(routing_behavior_group_params[1]))
+        elif tt_adjustment_params[0] == "prob" and len(tt_adjustment_params) == 2:
+            offer_tt = self.normal_percentile(tt, var, float(tt_adjustment_params[1]))
         else:
             raise ValueError(f"Invalid routing behavior group: {prq.routing_behavior_group}. Expected format: 'det_x' or 'prob_x' where x is a number.")
 
-        #print(f"Calculated offer_tt: {offer_tt} with tt: {tt}, var: {var}, routing_behavior_group: {prq.routing_behavior_group} for prq {prq.rid}")
         return offer_tt
 
     def _create_user_offer(self, prq, simulation_time, assigned_vehicle_plan=None, offer_dict_without_plan={}):

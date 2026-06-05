@@ -37,6 +37,10 @@ class SimulationRunner:
         self.sc_config_file_dict = {}
         self.res_dir = py_path.parent / "studies" / self.study_name / "results"
 
+        self.rb_sc_config_path = self.py_path.parent.parent / "fleetpy_coupling" / "Routing_Behavior" / f"routing_behavior_config.csv"
+        rb_sc_df = pd.read_csv(self.rb_sc_config_path)
+        self.rb_sc_df = rb_sc_df.set_index("routing_behavior_scenario")
+
     def create_sc_config_files(self):
         for sc_index, row in self.sc_config.iterrows():
             sc_df = pd.DataFrame()
@@ -78,6 +82,18 @@ class SimulationRunner:
             sc_df["rtt_corr_add"] = [float(row["rtt_corr_add"])]
             sc_df["op_max_wait_time"] = [float(row["op_max_wait_time"])]
             sc_df["routing_behavior_scenario"] = [int(row["routing_behavior_scenario"]) if not pd.isna(row['routing_behavior_scenario']) else None]
+            if sc_df["routing_behavior_scenario"].values[0] is not None and not pd.isna(sc_df["routing_behavior_scenario"].values[0]):
+                rb_key = sc_df["routing_behavior_scenario"].values[0]
+                # ensure key type matches index (int or str)
+                # get the 'config' value for the routing behavior scenario
+                if rb_key in self.rb_sc_df.index:
+                    config_value = self.rb_sc_df.at[rb_key, "config"]
+                else:
+                    raise ValueError(f"Routing behavior scenario {rb_key} not found in {self.rb_sc_config_path}.")
+                sc_df["routing_behavior_config"] = [config_value]
+            else:
+                sc_df["routing_behavior_config"] = [None]
+                
             if sc_df["routing_behavior_scenario"].values[0] is not None and not pd.isna(sc_df["routing_behavior_scenario"].values[0]):
                 sc_df["demand_name"] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}_rbsc_{str(int(row['routing_behavior_scenario'])).zfill(2)}"]
                 sc_df["rq_file"] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}_rbsc_{str(int(row['routing_behavior_scenario'])).zfill(2)}.csv"]

@@ -362,7 +362,7 @@ class IndividualRoutingBehaviorRequest(BasicRequest):
 
     def __init__(self, rq_row, routing_engine, simulation_time_step, scenario_parameters):
         super().__init__(rq_row, routing_engine, simulation_time_step, scenario_parameters)
-        self.routing_behavior_group = rq_row.get("routing_behavior_group", None)
+        self.routing_behavior_group = int(rq_row.get("routing_behavior_group", None))
 
 # -------------------------------------------------------------------------------------------------------------------- #
 
