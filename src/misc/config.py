@@ -80,6 +80,15 @@ def decode_config_str(in_string):
         return [decode_config_str(s) for s in in_string.split("|")]
     elif ":" in in_string:
         pairs = [pair.split(":") for pair in in_string.split(";")]
+
+        for p in pairs:
+            if len(p) != 2:
+                print("ERROR STRING:")
+                print(in_string)
+                print("BAD PAIR:")
+                print(p)
+                raise ValueError(f"Invalid pair: {p}")
+
         return {str_smart_convert(k): str_smart_convert(v) for k, v in pairs}
     elif ";" in in_string:
         return [str_smart_convert(x) for x in in_string.split(";")]
