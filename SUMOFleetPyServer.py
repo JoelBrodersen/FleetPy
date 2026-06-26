@@ -574,6 +574,7 @@ class SUMOFleetPyServer():
             
             print(sumoRoute_full)
             print(sumoRoute)
+            breakpoint()
         return sumoRoute
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
