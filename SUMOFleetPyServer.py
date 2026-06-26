@@ -571,7 +571,6 @@ class SUMOFleetPyServer():
             
             if edgeID != None and not edgeID.startswith(":"): # internal edges start with ":"
                 sumoRoute.append(edgeID)
-            if edgeID != None:  # Append to sumoRoute_full even if it's an internal edge
             
             print(sumoRoute_full)
             print(sumoRoute)
