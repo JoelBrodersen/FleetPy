@@ -572,9 +572,9 @@ class SUMOFleetPyServer():
             if edgeID != None and not edgeID.startswith(":"): # internal edges start with ":"
                 sumoRoute.append(edgeID)
             
-            print(sumoRoute_full)
-            print(sumoRoute)
-            breakpoint()
+        print(sumoRoute_full)
+        print(sumoRoute)
+        breakpoint()
         return sumoRoute
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
