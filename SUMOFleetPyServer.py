@@ -569,11 +569,15 @@ class SUMOFleetPyServer():
             else:
                 sumoRoute_full.append(edgeID)
             
-            if edgeID != None and not edgeID.startswith(":"): # internal edges start with ":"
-                sumoRoute.append(edgeID)
-            
+        sumoRoute_non_internal = [edge for edge in sumoRoute_full if not edge.startswith(":")]
+        first = sumoRoute_non_internal[0]
+        last = sumoRoute_non_internal[-1]
+        preceding_internal_edges = [edge for edge in sumoRoute_full if edge.startswith(":") and sumoRoute_full.index(edge) < sumoRoute_full.index(first)]
+        tailing_internal_edges = [edge for edge in sumoRoute_full if edge.startswith(":") and sumoRoute_full.index(edge) > sumoRoute_full.index(last)]
         print(sumoRoute_full)
         print(sumoRoute)
+        print(preceding_internal_edges)
+        print(tailing_internal_edges)
         breakpoint()
         return sumoRoute
 
