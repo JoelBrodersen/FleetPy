@@ -479,8 +479,7 @@ class SUMOFleetPyServer():
                                 try:
                                     traci.vehicle.changeTarget(sumo_vid, sumoRoute[-1])
                                     #traci.vehicle.rerouteTraveltime(sumo_vid)
-                                    print(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
-                                    breakpoint()
+                                    LOG.warning(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
                                     #print(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
 
                                 except:
@@ -554,6 +553,7 @@ class SUMOFleetPyServer():
             
     def _transform_route_fp_to_sumo(self,route):       
         sumoRoute = []
+        sumoRoute_full  = []
         for i in range(0, len(route)-1):
             o_node = route[i]
             d_node = route[i+1]
@@ -566,10 +566,15 @@ class SUMOFleetPyServer():
 
             if edgeID == None:
                     LOG.warning(f'There is a KeyError in the Route which is {o_node} -> {d_node} : {route}')
-                    print(f'There is a KeyError in the Route which is {o_node} -> {d_node} : {route}')
+            else:
+                sumoRoute_full.append(edgeID)
+            
             if edgeID != None and not edgeID.startswith(":"): # internal edges start with ":"
                 sumoRoute.append(edgeID)
-
+            if edgeID != None:  # Append to sumoRoute_full even if it's an internal edge
+            
+            print(sumoRoute_full)
+            print(sumoRoute)
         return sumoRoute
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
