@@ -324,18 +324,6 @@ class SUMOFleetPyServer():
 
             # 4) sumo time step
             try:
-                sim_time = traci.simulation.getTime()
-                loaded   = traci.simulation.getLoadedNumber()
-                running  = traci.vehicle.getIDCount()
-                LOG.info(f"SUMO step | sim_time={sim_time:.1f}  loaded={loaded}  running={running}")
-                if sim_time == 21677:
-                    traci.simulation.saveState(str(os.path.join(resultsPath, "SumoDumps", "simState_21677.xml.gz")))
-
-                if sim_time == 21679:
-                    LOG.info(f"Removal at simtime: {traci.simulation.getTime()}")
-                    LOG.info(f"Vehicles in Teleportation: {traci.vehicle.getTeleportingIDList()}")
-                    LOG.info( f"Vehicles Starting Teleportation: {traci.simulation.getStartingTeleportIDList()}")
-
                 traci.simulationStep()
             except Exception as e:
                 LOG.exception("SUMO crashed")
@@ -486,12 +474,13 @@ class SUMOFleetPyServer():
                             is_valid_route = False
                         
                         if is_valid_route == False:
-                                LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumoRoute}")
-                                LOG.debug("Use SUMO rerouter")
+                                print(f"Vehicle {sumo_vid} has an invalid route {sumoRoute}")
+                                print("Use SUMO rerouter")
                                 try:
                                     traci.vehicle.changeTarget(sumo_vid, sumoRoute[-1])
                                     #traci.vehicle.rerouteTraveltime(sumo_vid)
-                                    LOG.debug(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
+                                    print(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
+                                    breakpoint()
                                     #print(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
 
                                 except:
@@ -563,7 +552,7 @@ class SUMOFleetPyServer():
             self.sumo_to_fp_veh_id_dict[sumo_v_id_str] = (int(op_id), int(vid))
         return self.sumo_to_fp_veh_id_dict[sumo_v_id_str]
             
-    def _transform_route_fp_to_sumo(self,route):
+    def _transform_route_fp_to_sumo(self,route):       
         sumoRoute = []
         for i in range(0, len(route)-1):
             o_node = route[i]
@@ -580,6 +569,7 @@ class SUMOFleetPyServer():
                     print(f'There is a KeyError in the Route which is {o_node} -> {d_node} : {route}')
             if edgeID != None and not edgeID.startswith(":"): # internal edges start with ":"
                 sumoRoute.append(edgeID)
+
         return sumoRoute
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
