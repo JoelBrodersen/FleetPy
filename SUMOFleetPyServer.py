@@ -26,7 +26,6 @@ from run_examples import run_scenarios
 import random
 import time
 from scipy import stats
-import sumolib
 
 
 """ 
