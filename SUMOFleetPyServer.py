@@ -82,13 +82,12 @@ class SUMORoute():
         if len(self.SUMO_route_non_internal_edges) == 0:
             print(f"Route {self.FP_route} only consists of internal edges, check this!")
             print(f"SUMO route is {self.SUMO_route_all_edges}")
-            breakpoint()
+            #breakpoint()
             preceding_internal_edges =[":"]
             tailing_internal_edges = [":"]            
         else:
             preceding_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) < self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[0])]
             tailing_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) > self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[-1])]
-        print(f"Full SUMO Route: {self.SUMO_route_all_edges}")
         LOG.debug(f"Preceding Internal Edges: {preceding_internal_edges}")
         LOG.debug(f"Tailing Internal Edges: {tailing_internal_edges}")
 
@@ -548,7 +547,7 @@ class SUMOFleetPyServer():
                         if is_valid_route == False:
                                 LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumo_route.SUMO_route_edges}")
                                 LOG.warning("Use SUMO rerouter")
-                                breakpoint()
+                                #breakpoint()
                                 try:
                                     traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                                     #traci.vehicle.rerouteTraveltime(sumo_vid)
