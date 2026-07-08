@@ -539,7 +539,7 @@ class SUMOFleetPyServer():
                                 traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumo_route.SUMO_route_edges)
                         except:
                             LOG.warning(f'Route of {sumo_vid} could not be set to: {sumo_route.SUMO_route_edges}')
-                            #print(f'Route of {sumo_vid} could not be set to: {sumo_route.SUMO_route_edges}')
+                            LOG.exception(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
                             is_valid_route = False
                         
                         if is_valid_route == False:
