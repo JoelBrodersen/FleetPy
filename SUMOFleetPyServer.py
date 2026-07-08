@@ -532,11 +532,13 @@ class SUMOFleetPyServer():
                         print(type(sumo_route.SUMO_route_edges))
                         traci.vehicle.setRoute(sumo_vid,sumo_route.SUMO_route_edges)
                         traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
+                        traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
                         print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
                         print(f"Retrieved route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                         print(f"Type of retrieved route: {type(traci.vehicle.getRoute(sumo_vid))}")
                         print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
                         print(f"Arrival position for {sumo_vid}: {traci.vehicle.getParameter(sumo_vid, 'arrivalPos')}")
+                        print(f"Departure position for {sumo_vid}: {traci.vehicle.getParameter(sumo_vid, 'departPos')}")
                         breakpoint()
                         
                         
