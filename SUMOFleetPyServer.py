@@ -529,39 +529,33 @@ class SUMOFleetPyServer():
                     if sumo_route.SUMO_route_edges != currentRoute: ## Route needs to be updated because of an new order of fleetpy/teleport
                         #print("Route Update in SUMO",sumo_vid,"@",edgeID,currentRoute,"-->",sumoRoute)
                         is_valid_route = True
-                        print(type(sumo_route.SUMO_route_edges))
-                        traci.vehicle.setRoute(sumo_vid,sumo_route.SUMO_route_edges)
-                        traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
-                        traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
-                        print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
-                        print(f"Retrieved route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                        print(f"Type of retrieved route: {type(traci.vehicle.getRoute(sumo_vid))}")
-                        print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
-                        print(f"Arrival position for {sumo_vid}: {traci.vehicle.getParameter(sumo_vid, 'arrivalPos')}")
-                        print(f"Departure position for {sumo_vid}: {traci.vehicle.getParameter(sumo_vid, 'departPos')}")
-                        breakpoint()
-                        
+
                         
                         
                         try:
-                            traci.vehicle.setRoute(sumo_vid," ".join(sumo_route.SUMO_route_edges))
-                            traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=sumo_route.arrivalPos)
-                            LOG.warning(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
-                            LOG.warning(f"Retrieved route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                            LOG.warning(f"Type of retrieved route: {type(traci.vehicle.getRoute(sumo_vid))}")
-                            LOG.warning(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
-                            LOG.warning(f"Arrival position for {sumo_vid}: {traci.vehicle.getParameter(sumo_vid, 'arrivalPos')}")
+                            traci.vehicle.setRoute(sumo_vid,sumo_route.SUMO_route_edges)
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
+                            print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
+                            print(f"Retrieved route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                            print(f"Type of retrieved route: {type(traci.vehicle.getRoute(sumo_vid))}")
+                            print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
+                            print(f"Arrival position for {sumo_vid}: {traci.vehicle.getParameter(sumo_vid, 'arrivalPos')}")
+                            print(f"Departure position for {sumo_vid}: {traci.vehicle.getParameter(sumo_vid, 'departPos')}")
                             breakpoint()
+                        
                             if traci.vehicle.isRouteValid(sumo_vid) is False:
                                 LOG.warning(f'Route of {sumo_vid} is not valid')
-
+                                print(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
                                 is_valid_route = False
+                                breakpoint()
                             else:
                                 traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=sumo_route.SUMO_route_edges[-1])
                                 traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumo_route.SUMO_route_edges)
                         except:
                             LOG.warning(f'Route of {sumo_vid} could not be set to: {sumo_route.SUMO_route_edges}')
                             LOG.exception(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
+                            breakpoint()
                             is_valid_route = False
                         
                         if is_valid_route == False:
