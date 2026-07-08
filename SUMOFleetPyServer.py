@@ -532,6 +532,7 @@ class SUMOFleetPyServer():
                         try:
                             traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
                             LOG.warning(traci.vehicle.getRoute(sumo_vid))
+                            LOG.warning(type(traci.vehicle.getRoute(sumo_vid)))
                             breakpoint()
                             if traci.vehicle.isRouteValid(sumo_vid) is False:
                                 LOG.warning(f'Route of {sumo_vid} is not valid')
