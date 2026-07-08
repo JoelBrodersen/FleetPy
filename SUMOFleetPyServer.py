@@ -546,7 +546,7 @@ class SUMOFleetPyServer():
                         
                             if traci.vehicle.isRouteValid(sumo_vid) is False:
                                 LOG.warning(f'Route of {sumo_vid} is not valid')
-                                print(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")c
+                                print(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
                                 is_valid_route = False
                                 breakpoint()
                             else:
