@@ -529,8 +529,8 @@ class SUMOFleetPyServer():
                     if sumo_route.SUMO_route_edges != currentRoute: ## Route needs to be updated because of an new order of fleetpy/teleport
                         #print("Route Update in SUMO",sumo_vid,"@",edgeID,currentRoute,"-->",sumoRoute)
                         is_valid_route = True
-                        
-                        traci.vehicle.setRoute(sumo_vid," ".join(sumo_route.SUMO_route_edges))
+                        print(type(sumo_route.SUMO_route_edges))
+                        traci.vehicle.setRoute(sumo_vid,sumo_route.SUMO_route_edges)
                         traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=sumo_route.arrivalPos)
                         print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
                         print(f"Retrieved route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
