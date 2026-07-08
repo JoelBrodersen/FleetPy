@@ -545,13 +545,11 @@ class SUMOFleetPyServer():
                         if is_valid_route == False:
                                 LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumo_route.SUMO_route_edges}")
                                 LOG.warning("Use SUMO rerouter")
-                                breakpoint()
                                 try:
                                     traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                                     #traci.vehicle.rerouteTraveltime(sumo_vid)
                                     LOG.warning(f"Vehicle {sumo_vid} has been rerouted to {sumo_route.SUMO_route_edges[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
-                                    #print(f"Vehicle {sumo_vid} has been rerouted to {sumo_route.SUMO_route_edges[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
-
+                                    breakpoint()
                                 except:
                                     LOG.warning(f"Vehicle {sumo_vid} could not be rerouted")
                                     breakpoint()
