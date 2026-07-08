@@ -530,10 +530,13 @@ class SUMOFleetPyServer():
                         #print("Route Update in SUMO",sumo_vid,"@",edgeID,currentRoute,"-->",sumoRoute)
                         is_valid_route = True
                         try:
-                            traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
+                            traci.vehicle.setRoute(sumo_vid,sumo_route.SUMO_route_edges)
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=sumo_route.arrivalPos)
+                            LOG.warning(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
                             LOG.warning(traci.vehicle.getRoute(sumo_vid))
                             LOG.warning(type(traci.vehicle.getRoute(sumo_vid)))
                             LOG.warning(traci.vehicle.isRouteValid(sumo_vid))
+                            LOG.warning(traci.vehicle.getParameter(sumo_vid, "arrivalPos"))
                             breakpoint()
                             if traci.vehicle.isRouteValid(sumo_vid) is False:
                                 LOG.warning(f'Route of {sumo_vid} is not valid')
