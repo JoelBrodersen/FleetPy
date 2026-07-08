@@ -531,7 +531,7 @@ class SUMOFleetPyServer():
                         is_valid_route = True
                         print(type(sumo_route.SUMO_route_edges))
                         traci.vehicle.setRoute(sumo_vid,sumo_route.SUMO_route_edges)
-                        traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=sumo_route.arrivalPos)
+                        traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
                         print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
                         print(f"Retrieved route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                         print(f"Type of retrieved route: {type(traci.vehicle.getRoute(sumo_vid))}")
