@@ -107,8 +107,6 @@ class SUMORoute():
                     f"Expected exactly one matching row for from_node={self.FP_route[-1]}, got {len(tailing_addition_row)}")
             self.tailing_SUMO_edge = [tailing_addition_row.iloc[0]["source_edge_id"]]   
         self.SUMO_route_edges = self.preceding_SUMO_edge + self.SUMO_route_non_internal_edges + self.tailing_SUMO_edge
-        print(self.SUMO_route_edges)
-
 
 class SUMOFleetPyServer():
     def __init__(self,constant_config_path, scenario_config_path, sumo_config, sumoBinary, log_level):
@@ -547,7 +545,7 @@ class SUMOFleetPyServer():
                         if is_valid_route == False:
                                 LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumo_route.SUMO_route_edges}")
                                 LOG.warning("Use SUMO rerouter")
-                                #breakpoint()
+                                breakpoint()
                                 try:
                                     traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                                     #traci.vehicle.rerouteTraveltime(sumo_vid)
