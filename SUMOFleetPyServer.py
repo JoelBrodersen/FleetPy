@@ -538,6 +538,10 @@ class SUMOFleetPyServer():
                         
                         try:
                             LOG.debug(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                            print(f"Current route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                            print("Current position:", traci.vehicle.getRoadID(sumo_vid))
+                            print("New route:", sumo_route.SUMO_route_edges)
+                            breakpoint()
                             traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
