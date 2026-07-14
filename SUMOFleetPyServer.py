@@ -550,6 +550,7 @@ class SUMOFleetPyServer():
                             print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
                             print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                             print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
+                            print(f"Current position:", traci.vehicle.getRoadID(sumo_vid)," ",traci.vehicle.getLanePosition(sumo_vid),"of", traci.lane.getLength(current_lane))
                             breakpoint()
 
 
