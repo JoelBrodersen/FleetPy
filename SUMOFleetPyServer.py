@@ -543,8 +543,16 @@ class SUMOFleetPyServer():
                                 #sumo_route.SUMO_route_edges = sumo_route.SUMO_route_edges[1:]  # Remove the first edge from the new route
                                 #print(f"Updated new route for {sumo_vid} after removing the first edge: {sumo_route.SUMO_route_edges}")
                                 #breakpoint()
+                            current_edge = traci.vehicle.getRoadID(sumo_vid)
                             print(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                            traci.vehicle.setRoute(sumo_vid,list(sumo_route.SUMO_route_edges))
+                            
+                            traci.vehicle.setRoute(sumo_vid,current_edge)
+                            print("Route temporarily set to current edge:", traci.vehicle.getRoute(sumo_vid))
+                            breakpoint()
+                            print(f"Route of {sumo_vid} to be set to: {sumo_route.SUMO_route_edges}")
+                            traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
+                            print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                            breakpoint()
                             traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
                             for e1, e2 in zip(sumo_route.SUMO_route_edges[0:-1], sumo_route.SUMO_route_edges[1:-1]):
