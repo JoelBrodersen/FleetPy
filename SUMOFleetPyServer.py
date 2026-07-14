@@ -535,7 +535,11 @@ class SUMOFleetPyServer():
                         is_valid_route = True                       
 
                         current_edge = traci.vehicle.getRoadID(sumo_vid)
-                        traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
+                        try:
+                            traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
+                        except Exception as e:
+                            print(f"SUMO vehicle {sumo_vid} at {current_edge} could not set route to {sumo_route.route_id} with edges {sumo_route.SUMO_route_edges}. Current route is {traci.vehicle.getRoute(sumo_vid)}. Error: {e}")
+                            LOG.error(f"Error occurred while setting route for {sumo_vid}: {e}")
                         if traci.vehicle.isRouteValid(sumo_vid) is False:
                             raise ValueError(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
                         else:
