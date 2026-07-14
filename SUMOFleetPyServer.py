@@ -548,7 +548,7 @@ class SUMOFleetPyServer():
                             traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
                             for e1, e2 in zip(sumo_route.SUMO_route_edges[0:-1], sumo_route.SUMO_route_edges[1:-1]):
-                                if traci.simulation.findRoute(e1, e2).edges != [e1, e2]:
+                                if traci.simulation.findRoute(e1, e2).edges != tuple(e1, e2):
                                     print(f"Warning: SUMO route from {e1} to {e2} is not valid. SUMO route is {traci.simulation.findRoute(e1, e2).edges}.")
                                     breakpoint()
                             print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
