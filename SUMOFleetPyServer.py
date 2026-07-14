@@ -544,9 +544,13 @@ class SUMOFleetPyServer():
                                 #print(f"Updated new route for {sumo_vid} after removing the first edge: {sumo_route.SUMO_route_edges}")
                                 #breakpoint()
                             print(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                            traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
+                            traci.vehicle.setRoute(sumo_vid,str(sumo_route.SUMO_route_edges))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
+                            for e1, e2 in zip(sumo_route.SUMO_route_edges[0:-1], sumo_route.SUMO_route_edges[1:-1]):
+                                if traci.simulation.findRoute(e1, e2).edges != [e1, e2]:
+                                    print(f"Warning: SUMO route from {e1} to {e2} is not valid. SUMO route is {traci.simulation.findRoute(e1, e2).edges}.")
+                                    breakpoint()
                             print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
                             print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                             print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
@@ -557,7 +561,6 @@ class SUMOFleetPyServer():
 
 
                             if traci.vehicle.isRouteValid(sumo_vid) is False:
-                                LOG.warning(f'Route of {sumo_vid} is not valid')
                                 print(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
                                 is_valid_route = False
                                 breakpoint()
@@ -565,7 +568,6 @@ class SUMOFleetPyServer():
                                 traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=sumo_route.SUMO_route_edges[-1])
                                 traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumo_route.SUMO_route_edges)
                         except Exception as e:
-                            LOG.warning(f'Route of {sumo_vid} could not be set to: {sumo_route.SUMO_route_edges}')
                             LOG.exception(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
                             print(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
                             print("Current route:", traci.vehicle.getRoute(sumo_vid))
