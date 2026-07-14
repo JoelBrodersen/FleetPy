@@ -567,6 +567,7 @@ class SUMOFleetPyServer():
                             LOG.exception(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
                             print(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
                             print("Current route:", traci.vehicle.getRoute(sumo_vid))
+                            current_lane = traci.vehicle.getLaneID(sumo_vid)
                             print(f"Current position:", traci.vehicle.getRoadID(sumo_vid)," ",traci.vehicle.getLanePosition(sumo_vid),"of", traci.lane.getLength(current_lane))
                             print(e)
                             breakpoint()
