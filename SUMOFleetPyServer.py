@@ -538,11 +538,11 @@ class SUMOFleetPyServer():
                         
                         try:
                             
-                            if sumo_route.SUMO_route_edges[0] == traci.vehicle.getRoadID(sumo_vid):
-                                print(f"Vehicle {sumo_vid} is already on the first edge of the new route {sumo_route.SUMO_route_edges}.")
-                                sumo_route.SUMO_route_edges = sumo_route.SUMO_route_edges[1:]  # Remove the first edge from the new route
-                                print(f"Updated new route for {sumo_vid} after removing the first edge: {sumo_route.SUMO_route_edges}")
-                                breakpoint()
+                            #if sumo_route.SUMO_route_edges[0] == traci.vehicle.getRoadID(sumo_vid):
+                                #print(f"Vehicle {sumo_vid} is already on the first edge of the new route {sumo_route.SUMO_route_edges}.")
+                                #sumo_route.SUMO_route_edges = sumo_route.SUMO_route_edges[1:]  # Remove the first edge from the new route
+                                #print(f"Updated new route for {sumo_vid} after removing the first edge: {sumo_route.SUMO_route_edges}")
+                                #breakpoint()
                             LOG.debug(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                             traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
