@@ -536,7 +536,7 @@ class SUMOFleetPyServer():
 
                         print(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                         current_edge = traci.vehicle.getRoadID(sumo_vid)
-                        traci.vehicle.setRoute(sumo_vid,tuple(current_edge))
+                        traci.vehicle.setRoute(sumo_vid,tuple([current_edge]))
                         print("Route temporarily set to current edge:", traci.vehicle.getRoute(sumo_vid))
                         breakpoint()
 
