@@ -538,7 +538,9 @@ class SUMOFleetPyServer():
                         traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
                         if traci.vehicle.isRouteValid(sumo_vid) is False:
                             raise ValueError(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
-
+                        else:
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=sumo_route.SUMO_route_edges[-1])
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumo_route.SUMO_route_edges)
                         #try:
                             
                             #if sumo_route.SUMO_route_edges[0] == traci.vehicle.getRoadID(sumo_vid):
@@ -555,7 +557,6 @@ class SUMOFleetPyServer():
                             #print(f"Route of {sumo_vid} to be set to: {sumo_route.SUMO_route_edges}")
                             #traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
                             ##print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                            breakpoint()
                             #traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
                             #traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
                             
@@ -569,9 +570,7 @@ class SUMOFleetPyServer():
 
 
 
-                            else:
-                                traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=sumo_route.SUMO_route_edges[-1])
-                                traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumo_route.SUMO_route_edges)
+                        """        
                         except Exception as e:
                             LOG.exception(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
                             print(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
@@ -581,7 +580,8 @@ class SUMOFleetPyServer():
                             print(e)
                             breakpoint()
                             is_valid_route = False
-                        
+                        """
+                        """
                         if is_valid_route == False:
                                 LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumo_route.SUMO_route_edges}")
                                 LOG.warning("Use SUMO rerouter")
@@ -593,6 +593,7 @@ class SUMOFleetPyServer():
                                 except:
                                     LOG.warning(f"Vehicle {sumo_vid} could not be rerouted")
                                     breakpoint()
+                        """
                     else:
                         LOG.debug(f"Vehicle {sumo_vid} is Loaded and in Network and SumoRoute {sumo_route.SUMO_route_edges} is current Route {currentRoute}")
                         pass 
