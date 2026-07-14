@@ -536,7 +536,7 @@ class SUMOFleetPyServer():
 
                         current_edge = traci.vehicle.getRoadID(sumo_vid)
                         if current_edge.startswith(":"):
-                            print(f"Vehicle {sumo_vid} is currently on an internal edge {current_edge}. Attempting to set new route {sumo_route.SUMO_route_edges}.")
+                            print(f"Vehicle {sumo_vid} is currently on edge {current_edge} from junction {from_junction} to junction {to_junction}. Attempting to set new route {sumo_route.SUMO_route_edges}.")
                             breakpoint()
                         try:
                             traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
