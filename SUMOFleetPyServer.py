@@ -534,7 +534,18 @@ class SUMOFleetPyServer():
                         #print(f"Route Update in SUMO: {sumo_vid} @{edgeID} {currentRoute}-{type(currentRoute)} --> {sumo_route.SUMO_route_edges}-{type(sumo_route.SUMO_route_edges)}")
                         is_valid_route = True
 
-                        
+                        print(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                        current_edge = traci.vehicle.getRoadID(sumo_vid)
+                        traci.vehicle.setRoute(sumo_vid,tuple(current_edge))
+                        print("Route temporarily set to current edge:", traci.vehicle.getRoute(sumo_vid))
+                        breakpoint()
+
+
+
+
+
+
+
                         
                         try:
                             
@@ -543,12 +554,12 @@ class SUMOFleetPyServer():
                                 #sumo_route.SUMO_route_edges = sumo_route.SUMO_route_edges[1:]  # Remove the first edge from the new route
                                 #print(f"Updated new route for {sumo_vid} after removing the first edge: {sumo_route.SUMO_route_edges}")
                                 #breakpoint()
-                            current_edge = traci.vehicle.getRoadID(sumo_vid)
-                            print(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                             
-                            traci.vehicle.setRoute(sumo_vid,tuple(current_edge))
-                            print("Route temporarily set to current edge:", traci.vehicle.getRoute(sumo_vid))
-                            breakpoint()
+                            
+                            
+                            
+                            
+                            
                             print(f"Route of {sumo_vid} to be set to: {sumo_route.SUMO_route_edges}")
                             traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
                             print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
