@@ -535,9 +535,9 @@ class SUMOFleetPyServer():
                         is_valid_route = True                       
 
                         current_edge = traci.vehicle.getRoadID(sumo_vid)
-                        to_junction = traci.edge.getToNode(current_edge)
-                        from_junction = traci.edge.getFromNode(current_edge)
-                        
+                        to_junction = traci.edge.getToJunction(current_edge)
+                        from_junction = traci.edge.getFromJunction(current_edge)
+
                         if current_edge.startswith(":"):
                             
                             print(f"Vehicle {sumo_vid} is currently on edge {current_edge} from junction {from_junction} to junction {to_junction}. Attempting to set new route {sumo_route.SUMO_route_edges}.")
