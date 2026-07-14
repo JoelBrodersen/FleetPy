@@ -536,12 +536,13 @@ class SUMOFleetPyServer():
                         for e in sumo_route.SUMO_route_edges:
                             if e not in traci.edge.getIDList():
                                 print("Missing edge:", e)
+                        
                         for e1, e2 in zip(sumo_route.SUMO_route_edges[0:-1], sumo_route.SUMO_route_edges[1:-1]):
                             if traci.simulation.findRoute(e1, e2).edges != tuple([e1, e2]):
                                 print(f"Warning: SUMO route from {e1} to {e2} is not valid. SUMO route is {traci.simulation.findRoute(e1, e2).edges}.")
                                 breakpoint()
                         
-                        traci.route.add(str(sumo_route.route_id), sumo_route.SUMO_route_edges)
+                        traci.route.add(str(sumo_route.route_id), tuple(sumo_route.SUMO_route_edges))
                         print(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                         current_edge = traci.vehicle.getRoadID(sumo_vid)
                         traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
