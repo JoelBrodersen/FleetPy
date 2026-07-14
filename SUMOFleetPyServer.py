@@ -539,8 +539,8 @@ class SUMOFleetPyServer():
                         if traci.vehicle.isRouteValid(sumo_vid) is False:
                             raise ValueError(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
                         else:
-                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=sumo_route.SUMO_route_edges[-1])
-                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumo_route.SUMO_route_edges)
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=str(sumo_route.SUMO_route_edges[-1]))
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=str(sumo_route.SUMO_route_edges))
                         #try:
                             
                             #if sumo_route.SUMO_route_edges[0] == traci.vehicle.getRoadID(sumo_vid):
