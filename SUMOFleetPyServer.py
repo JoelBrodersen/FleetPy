@@ -537,17 +537,15 @@ class SUMOFleetPyServer():
                         current_edge = traci.vehicle.getRoadID(sumo_vid)
                         to_junction = traci.edge.getToJunction(current_edge)
                         from_junction = traci.edge.getFromJunction(current_edge)
-
-                        if current_edge.startswith(":"):
-                            
-                            print(f"Vehicle {sumo_vid} is currently on edge {current_edge} from junction {from_junction} to junction {to_junction}. Attempting to set new route {sumo_route.SUMO_route_edges}.")
-                            breakpoint()
+                        old_route = traci.vehicle.getRoute(sumo_vid)
                         try:
                             traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
                         except Exception as e:
                             print(f"Vehicle {sumo_vid} is currently on edge {current_edge} from junction {from_junction} to junction {to_junction}. Attempting to set new route {sumo_route.SUMO_route_edges}.")
                             print(f"SUMO vehicle {sumo_vid} at {current_edge} could not set route to {sumo_route.route_id} with edges {sumo_route.SUMO_route_edges}. Current route is {traci.vehicle.getRoute(sumo_vid)}. Error: {e}")
                             print(f"Error occurred while setting route for {sumo_vid}: {e}")
+                            print(old_route)
+                            print(e)
                             breakpoint()
                         if traci.vehicle.isRouteValid(sumo_vid) is False:
                             raise ValueError(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
