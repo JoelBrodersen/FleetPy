@@ -532,33 +532,14 @@ class SUMOFleetPyServer():
                     ## SUMO-Route Update needed?
                     if tuple(sumo_route.SUMO_route_edges) != currentRoute: ## Route needs to be updated because of an new order of fleetpy/teleport
                         #print(f"Route Update in SUMO: {sumo_vid} @{edgeID} {currentRoute}-{type(currentRoute)} --> {sumo_route.SUMO_route_edges}-{type(sumo_route.SUMO_route_edges)}")
-                        is_valid_route = True
-                        for e in sumo_route.SUMO_route_edges:
-                            if e not in traci.edge.getIDList():
-                                print("Missing edge:", e)
-                        
-                        for e1, e2 in zip(sumo_route.SUMO_route_edges[0:-1], sumo_route.SUMO_route_edges[1:-1]):
-                            if traci.simulation.findRoute(e1, e2).edges != tuple([e1, e2]):
-                                print(f"Warning: SUMO route from {e1} to {e2} is not valid. SUMO route is {traci.simulation.findRoute(e1, e2).edges}.")
-                                breakpoint()
-                        
-                        print(f"Old route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                        is_valid_route = True                       
 
-                        
                         current_edge = traci.vehicle.getRoadID(sumo_vid)
                         traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
-                        print(f"Route of {sumo_vid} to be set to: {sumo_route.SUMO_route_edges}")
-                        print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                        breakpoint()
+                        if traci.vehicle.isRouteValid(sumo_vid) is False:
+                            raise ValueError(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
 
-
-
-
-
-
-
-                        
-                        try:
+                        #try:
                             
                             #if sumo_route.SUMO_route_edges[0] == traci.vehicle.getRoadID(sumo_vid):
                                 #print(f"Vehicle {sumo_vid} is already on the first edge of the new route {sumo_route.SUMO_route_edges}.")
@@ -571,26 +552,23 @@ class SUMOFleetPyServer():
                             
                             
                             
-                            print(f"Route of {sumo_vid} to be set to: {sumo_route.SUMO_route_edges}")
-                            traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
-                            print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                            #print(f"Route of {sumo_vid} to be set to: {sumo_route.SUMO_route_edges}")
+                            #traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
+                            ##print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
                             breakpoint()
-                            traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
-                            traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
+                            #traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
+                            #traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
                             
-                            print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
-                            print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                            print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
-                            current_lane = traci.vehicle.getLaneID(sumo_vid)
-                            print(f"Current position:", traci.vehicle.getRoadID(sumo_vid)," ",traci.vehicle.getLanePosition(sumo_vid),"of", traci.lane.getLength(current_lane))
-                            breakpoint()
+                            #print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
+                            #print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
+                            ##print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
+                            #current_lane = traci.vehicle.getLaneID(sumo_vid)
+                            #print(f"Current position:", traci.vehicle.getRoadID(sumo_vid)," ",traci.vehicle.getLanePosition(sumo_vid),"of", traci.lane.getLength(current_lane))
+                            #breakpoint()
 
 
 
-                            if traci.vehicle.isRouteValid(sumo_vid) is False:
-                                print(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
-                                is_valid_route = False
-                                breakpoint()
+
                             else:
                                 traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=sumo_route.SUMO_route_edges[-1])
                                 traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumo_route.SUMO_route_edges)
