@@ -549,11 +549,9 @@ class SUMOFleetPyServer():
                             ## TODO Find a better solution for this edge case. Currently the vehicle is rerouted to the last edge of the new route using the SUMO Router. This is not optimal but it is a workaround for this edge case.
                             if str(e) == f"Route replacement failed for vehicle '{sumo_vid}' (Vehicle is on junction-internal edge leading elsewhere).":                           
                                 LOG.warning(f"Vehicle {sumo_vid} is on a junction-internal edge leading elsewhere. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
-                                traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                                 print(f"Vehicle {sumo_vid} is on a junction-internal edge leading elsewhere. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                                 self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))
-
-                                breakpoint()
                             else:
                                 raise ValueError(f"Unknown error occurred while setting route for {sumo_vid}: {e}")
                         
