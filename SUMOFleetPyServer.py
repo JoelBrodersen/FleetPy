@@ -542,8 +542,9 @@ class SUMOFleetPyServer():
                             traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
                         except Exception as e:
                             if str(e) == f"Route replacement failed for vehicle '{sumo_vid}' (Vehicle is on junction-internal edge leading elsewhere).":                           
-                                print(f"Vehicle {sumo_vid} is currently on edge {current_edge} from junction {from_junction} to junction {to_junction}. Attempting to set new route {sumo_route.SUMO_route_edges}.")
-                                print(f"SUMO vehicle {sumo_vid} at {current_edge} could not set route to {sumo_route.route_id} with edges {sumo_route.SUMO_route_edges}. Current route is {traci.vehicle.getRoute(sumo_vid)}. Error: {e}")
+                                #print(f"Vehicle {sumo_vid} is currently on edge {current_edge} from junction {from_junction} to junction {to_junction}. Attempting to set new route {sumo_route.SUMO_route_edges}.")
+                                print(f"SUMO vehicle {sumo_vid} at {current_edge} could not set route to {sumo_route.route_id} with edges {sumo_route.SUMO_route_edges}.")
+                                print(f"Current route is {traci.vehicle.getRoute(sumo_vid)}. Error: {e}")
                                 print(old_route)
                                 print(e)
                                 breakpoint()
