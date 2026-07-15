@@ -430,6 +430,7 @@ class SUMOFleetPyServer():
 
             step+=1
         traci.close()
+        print(f"SUMO-Route used for rerouting: {len(self.sumo_router_usage)} times")
         self._post_sim_evaluation()
 
     def _post_sim_evaluation(self):
