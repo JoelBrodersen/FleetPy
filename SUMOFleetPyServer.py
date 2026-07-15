@@ -371,7 +371,7 @@ class SUMOFleetPyServer():
                     leg_status_dict = self.fp_sim_env.step(int(sim_time)) 
                     last_time = sim_time
   
-            if sim_time % 5 == 0:
+            if sim_time % 120 == 0:
                 print("{}: current simtime: {}/{}".format(self.fp_sim_env.scenario_parameters[G_SCENARIO_NAME], sim_time, end_time))
            
             # 2) check for rejected requests --> PV replacement or Ignoring
@@ -606,6 +606,7 @@ class SUMOFleetPyServer():
                     LOG.warning(f"SUMO-vehicle  {sumo_vid} ended to teleport in this timestep")      
             
             else:  
+                print(f"Vehicle {sumo_vid} at {veh_obj.pos} has only internal route: {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}"  )
                 breakpoint()
                 LOG.debug(f"veh {veh_obj.vid} @ {veh_obj.pos} gets internal route: {route}")
                 if veh_obj.pos[0] == route[-1] and veh_obj.pos[1] == None:
