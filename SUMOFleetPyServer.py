@@ -576,14 +576,14 @@ class SUMOFleetPyServer():
                     if self.sumo_binary == "sumo":
                         try:
                             traci.vehicle.addFull(vehID=sumo_vid, routeID=sumo_route.route_id, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple],departPos=sumo_route.departPos, arrivalPos=sumo_route.arrivalPos)  
-                        except:
+                        except Exception as e:
                             LOG.warning(f'Vehicle {sumo_vid} could not be added')
                             LOG.warning(traci.simulation.getLoadedIDList())
                             LOG.warning(traci.simulation.getEndingTeleportIDList())
                             LOG.warning(traci.simulation.getStartingTeleportIDList())
                             LOG.warning(traci.vehicle.getTeleportingIDList())
                             LOG.warning(sumo_vid in traci.vehicle.getIDList())
-                            raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()}')
+                            raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()} {e}')
                     
                     
                     elif self.sumo_binary == "sumo-gui":
@@ -598,16 +598,20 @@ class SUMOFleetPyServer():
                             if traci.vehicle.isRouteValid(sumo_vid) is False:
                                 LOG.warning(f'Route of {sumo_vid} is not valid')
                     
-                        except:
-                                raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()}')
-                                LOG.warning(f'Vehicle {sumo_vid} could not be added')
-                                LOG.warning(traci.simulation.getLoadedIDList())
-                                pass
+                        except Exception as e:
+                            LOG.warning(f'Vehicle {sumo_vid} could not be added')
+                            LOG.warning(traci.simulation.getLoadedIDList())
+                            LOG.warning(traci.simulation.getEndingTeleportIDList())
+                            LOG.warning(traci.simulation.getStartingTeleportIDList())
+                            LOG.warning(traci.vehicle.getTeleportingIDList())
+                            LOG.warning(sumo_vid in traci.vehicle.getIDList())
+                            raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()} {e}')
+
                 if sumo_vid in traci.simulation.getEndingTeleportIDList():
                     LOG.warning(f"SUMO-vehicle  {sumo_vid} ended to teleport in this timestep")      
             
             else:  
-                print(f"Vehicle {sumo_vid} at {veh_obj.pos} has only internal route: {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}"  )
+                LOG.warning(f"Vehicle {sumo_vid} at {veh_obj.pos} has only internal route: {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}"  )
                 breakpoint()
                 LOG.debug(f"veh {veh_obj.vid} @ {veh_obj.pos} gets internal route: {route}")
                 if veh_obj.pos[0] == route[-1] and veh_obj.pos[1] == None:
