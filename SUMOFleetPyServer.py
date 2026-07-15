@@ -108,6 +108,8 @@ class SUMORoute():
                     f"Expected exactly one matching row for from_node={self.FP_route[-1]}, got {len(tailing_addition_row)}")
             self.tailing_SUMO_edge = [tailing_addition_row.iloc[0]["source_edge_id"]]   
         self.SUMO_route_edges = self.preceding_SUMO_edge + self.SUMO_route_non_internal_edges + self.tailing_SUMO_edge
+        print(f"Preceding SUMO edge: {self.preceding_SUMO_edge}")
+        print(f"Tailing SUMO edge: {self.tailing_SUMO_edge}")
         print(f"Resulting SUMO route for FleetPy route {self.FP_route}: {self.SUMO_route_edges}")
 
 
