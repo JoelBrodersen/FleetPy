@@ -65,7 +65,6 @@ class SUMORoute():
         self.arrivalPos = "max"
 
     def transform_route_fp_to_sumo(self):       
-    
         for i in range(0, len(self.FP_route)-1):
             o_node = self.FP_route[i]
             d_node = self.FP_route[i+1]
@@ -78,9 +77,8 @@ class SUMORoute():
             if edgeID is not None:
                 self.SUMO_route_all_edges.append(edgeID)
             else:
-                print(f"Route {self.FP_route} contains an edge which is not in the SUMO network: {o_node} -> {d_node}")
-                breakpoint()
-                LOG.warning(f'There is a KeyError in the Route which is {o_node} -> {d_node} : {self.FP_route}')
+                raise ValueError(f"Route {self.FP_route} contains an edge which is not in the SUMO network: {o_node} -> {d_node}")
+
             
         self.SUMO_route_non_internal_edges = [edge for edge in self.SUMO_route_all_edges if not edge.startswith(":")]
         if len(self.SUMO_route_non_internal_edges) == 0:
@@ -94,7 +92,7 @@ class SUMORoute():
             tailing_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) > self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[-1])]
         LOG.debug(f"Preceding Internal Edges: {preceding_internal_edges}")
         LOG.debug(f"Tailing Internal Edges: {tailing_internal_edges}")
-
+        print(f"Resulting SUMO route for FleetPy route {self.FP_route}: {self.SUMO_route_edges}")
         
         
         if len(preceding_internal_edges) > 0:
