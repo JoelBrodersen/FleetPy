@@ -92,7 +92,6 @@ class SUMORoute():
             tailing_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) > self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[-1])]
         LOG.debug(f"Preceding Internal Edges: {preceding_internal_edges}")
         LOG.debug(f"Tailing Internal Edges: {tailing_internal_edges}")
-        print(f"Resulting SUMO route for FleetPy route {self.FP_route}: {self.SUMO_route_edges}")
         
         
         if len(preceding_internal_edges) > 0:
@@ -109,6 +108,8 @@ class SUMORoute():
                     f"Expected exactly one matching row for from_node={self.FP_route[-1]}, got {len(tailing_addition_row)}")
             self.tailing_SUMO_edge = [tailing_addition_row.iloc[0]["source_edge_id"]]   
         self.SUMO_route_edges = self.preceding_SUMO_edge + self.SUMO_route_non_internal_edges + self.tailing_SUMO_edge
+        print(f"Resulting SUMO route for FleetPy route {self.FP_route}: {self.SUMO_route_edges}")
+
 
 class SUMOFleetPyServer():
     def __init__(self,constant_config_path, scenario_config_path, sumo_config, sumoBinary, log_level):
