@@ -577,13 +577,13 @@ class SUMOFleetPyServer():
                         try:
                             traci.vehicle.addFull(vehID=sumo_vid, routeID=sumo_route.route_id, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple],departPos=sumo_route.departPos, arrivalPos=sumo_route.arrivalPos)  
                         except:
-                            LOG.debug(f'Vehicle {sumo_vid} could not be added')
-                            LOG.debug(traci.simulation.getLoadedIDList())
-                            LOG.debug(traci.simulation.getEndingTeleportIDList())
-                            LOG.debug(traci.simulation.getStartingTeleportIDList())
-                            LOG.debug(traci.vehicle.getTeleportingIDList())
-                            LOG.debug(sumo_vid in traci.vehicle.getIDList()) 
-                            breakpoint()
+                            print(f'Vehicle {sumo_vid} could not be added')
+                            print(traci.simulation.getLoadedIDList())
+                            print(traci.simulation.getEndingTeleportIDList())
+                            print(traci.simulation.getStartingTeleportIDList())
+                            print(traci.vehicle.getTeleportingIDList())
+                            print(sumo_vid in traci.vehicle.getIDList())
+                            raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()}')
                     
                     
                     elif self.sumo_binary == "sumo-gui":
