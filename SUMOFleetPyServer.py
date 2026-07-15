@@ -150,6 +150,7 @@ class SUMOFleetPyServer():
         self.fp_to_sumo_veh_id_dict= {}
         self.sumo_to_fp_veh_id_dict = {}
         self.rejected_requests = set() 
+        self.sumo_router_usage = []
 
     def _finalize_setup(self):
         self.g_end_time_setup = time.time()
@@ -535,13 +536,9 @@ class SUMOFleetPyServer():
                         #print(f"Route Update in SUMO: {sumo_vid} @{edgeID} {currentRoute}-{type(currentRoute)} --> {sumo_route.SUMO_route_edges}-{type(sumo_route.SUMO_route_edges)}")
                         is_valid_route = True                       
 
-                        current_edge = traci.vehicle.getRoadID(sumo_vid)
-                        to_junction = traci.edge.getToJunction(current_edge)
-                        from_junction = traci.edge.getFromJunction(current_edge)
-                        old_route = list(traci.vehicle.getRoute(sumo_vid))
-                        next_links = traci.vehicle.getNextLinks(sumo_vid)
                         try:
                             traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
+                            
                         except Exception as e:
 
                             
@@ -550,6 +547,8 @@ class SUMOFleetPyServer():
                             if str(e) == f"Route replacement failed for vehicle '{sumo_vid}' (Vehicle is on junction-internal edge leading elsewhere).":                           
                                 LOG.warning(f"Vehicle {sumo_vid} is on a junction-internal edge leading elsewhere. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
                                 print(f"Vehicle {sumo_vid} is on a junction-internal edge leading elsewhere. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                current_edge = traci.vehicle.getRoadID(sumo_vid)
+                                old_route = list(traci.vehicle.getRoute(sumo_vid))
                                 traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                                 self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))
                             else:
@@ -561,6 +560,8 @@ class SUMOFleetPyServer():
                         else:
                             traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=str(sumo_route.SUMO_route_edges[-1]))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=str(sumo_route.SUMO_route_edges))
+                       
+                      
                         #try:
                             
                             #if sumo_route.SUMO_route_edges[0] == traci.vehicle.getRoadID(sumo_vid):
