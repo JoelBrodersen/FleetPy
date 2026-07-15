@@ -82,10 +82,9 @@ class SUMORoute():
             
         self.SUMO_route_non_internal_edges = [edge for edge in self.SUMO_route_all_edges if not edge.startswith(":")]
         if len(self.SUMO_route_non_internal_edges) == 0:
-            print(f"Route {self.FP_route} only consists of internal edges, check this!")
-            print(f"SUMO route is {self.SUMO_route_all_edges}")
-            #breakpoint()
-            preceding_internal_edges =[":"]
+            #print(f"Route {self.FP_route} only consists of internal edges, check this!")
+            #print(f"SUMO route is {self.SUMO_route_all_edges}")
+#            preceding_internal_edges =[":"]
             tailing_internal_edges = [":"]            
         else:
             preceding_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) < self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[0])]
@@ -108,9 +107,9 @@ class SUMORoute():
                     f"Expected exactly one matching row for from_node={self.FP_route[-1]}, got {len(tailing_addition_row)}")
             self.tailing_SUMO_edge = [tailing_addition_row.iloc[0]["source_edge_id"]]   
         self.SUMO_route_edges = self.preceding_SUMO_edge + self.SUMO_route_non_internal_edges + self.tailing_SUMO_edge
-        print(f"Preceding SUMO edge: {self.preceding_SUMO_edge}")
-        print(f"Tailing SUMO edge: {self.tailing_SUMO_edge}")
-        print(f"Resulting SUMO route for FleetPy route {self.FP_route}: {self.SUMO_route_edges}")
+        #print(f"Preceding SUMO edge: {self.preceding_SUMO_edge}")
+        #print(f"Tailing SUMO edge: {self.tailing_SUMO_edge}")
+        #print(f"Resulting SUMO route for FleetPy route {self.FP_route}: {self.SUMO_route_edges}")
 
 
 class SUMOFleetPyServer():
@@ -560,61 +559,7 @@ class SUMOFleetPyServer():
                         else:
                             traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=str(sumo_route.SUMO_route_edges[-1]))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=str(sumo_route.SUMO_route_edges))
-                       
-                      
-                        #try:
-                            
-                            #if sumo_route.SUMO_route_edges[0] == traci.vehicle.getRoadID(sumo_vid):
-                                #print(f"Vehicle {sumo_vid} is already on the first edge of the new route {sumo_route.SUMO_route_edges}.")
-                                #sumo_route.SUMO_route_edges = sumo_route.SUMO_route_edges[1:]  # Remove the first edge from the new route
-                                #print(f"Updated new route for {sumo_vid} after removing the first edge: {sumo_route.SUMO_route_edges}")
-                                #breakpoint()
-                            
-                            
-                            
-                            
-                            
-                            
-                            #print(f"Route of {sumo_vid} to be set to: {sumo_route.SUMO_route_edges}")
-                            #traci.vehicle.setRoute(sumo_vid,tuple(sumo_route.SUMO_route_edges))
-                            ##print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                            #traci.vehicle.setParameter(objectID=sumo_vid, key="arrivalPos", value=str(sumo_route.arrivalPos))
-                            #traci.vehicle.setParameter(objectID=sumo_vid, key="departPos", value=str(sumo_route.departPos))
-                            
-                            #print(f"Route of {sumo_vid} has been set to: {sumo_route.SUMO_route_edges}")
-                            #print(f"New route for {sumo_vid}: {traci.vehicle.getRoute(sumo_vid)}")
-                            ##print(f"Is route valid for {sumo_vid}? {traci.vehicle.isRouteValid(sumo_vid)}")
-                            #current_lane = traci.vehicle.getLaneID(sumo_vid)
-                            #print(f"Current position:", traci.vehicle.getRoadID(sumo_vid)," ",traci.vehicle.getLanePosition(sumo_vid),"of", traci.lane.getLength(current_lane))
-                            #breakpoint()
-
-
-
-
-                        """        
-                        except Exception as e:
-                            LOG.exception(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
-                            print(f"Failed to set route of {sumo_vid} to {sumo_route.SUMO_route_edges}")
-                            print("Current route:", traci.vehicle.getRoute(sumo_vid))
-                            current_lane = traci.vehicle.getLaneID(sumo_vid)
-                            print(f"Current position:", traci.vehicle.getRoadID(sumo_vid)," ",traci.vehicle.getLanePosition(sumo_vid),"of", traci.lane.getLength(current_lane))
-                            print(e)
-                            breakpoint()
-                            is_valid_route = False
-                        """
-                        """
-                        if is_valid_route == False:
-                                LOG.warning(f"Vehicle {sumo_vid} has an invalid route {sumo_route.SUMO_route_edges}")
-                                LOG.warning("Use SUMO rerouter")
-                                try:
-                                    traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
-                                    #traci.vehicle.rerouteTraveltime(sumo_vid)
-                                    LOG.warning(f"Vehicle {sumo_vid} has been rerouted to {sumo_route.SUMO_route_edges[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
-                                    breakpoint()
-                                except:
-                                    LOG.warning(f"Vehicle {sumo_vid} could not be rerouted")
-                                    breakpoint()
-                        """
+                                  
                     else:
                         LOG.debug(f"Vehicle {sumo_vid} is Loaded and in Network and SumoRoute {sumo_route.SUMO_route_edges} is current Route {currentRoute}")
                         pass 
