@@ -26,7 +26,7 @@ from run_examples import run_scenarios
 import random
 import time
 from scipy import stats
-
+import re
 
 """ 
 This script can be used to create a FleetPy-Simulation coupled to SUMO.
@@ -551,6 +551,16 @@ class SUMOFleetPyServer():
                                 old_route = list(traci.vehicle.getRoute(sumo_vid))
                                 traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                                 self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))
+                            elif re.fullmatch(rf"Route replacement failed for vehicle '{re.escape(sumo_vid)}' \(current edge '[^']+' not found in new route\)\.",str(e)):
+                                LOG.warning(f"Vehicle {sumo_vid} is on an edge that is not part of the new route. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                print(f"Vehicle {sumo_vid} is on an edge that is not part of the new route. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                current_edge = traci.vehicle.getRoadID(sumo_vid)
+                                old_route = list(traci.vehicle.getRoute(sumo_vid))
+                                traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
+                                self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))
+                                breakpoint()
+                            
+                            
                             else:
                                 print(f"Unknown error occurred while setting route for {sumo_vid} at sim_time {sim_time} at edge {traci.vehicle.getRoadID(sumo_vid)} with current route {traci.vehicle.getRoute(sumo_vid)} and new route {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}")
                                 raise ValueError(f"Unknown error occurred while setting route for {sumo_vid}: {e}")
