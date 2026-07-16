@@ -150,6 +150,7 @@ class SUMOFleetPyServer():
         self.sumo_to_fp_veh_id_dict = {}
         self.rejected_requests = set() 
         self.sumo_router_usage = []
+        self.FP_router_usage = 0 
 
     def _finalize_setup(self):
         self.g_end_time_setup = time.time()
@@ -557,9 +558,7 @@ class SUMOFleetPyServer():
                                 current_edge = traci.vehicle.getRoadID(sumo_vid)
                                 old_route = list(traci.vehicle.getRoute(sumo_vid))
                                 traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
-                                self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))
-                                breakpoint()
-                            
+                                self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))                           
                             
                             else:
                                 print(f"Unknown error occurred while setting route for {sumo_vid} at sim_time {sim_time} at edge {traci.vehicle.getRoadID(sumo_vid)} with current route {traci.vehicle.getRoute(sumo_vid)} and new route {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}")
