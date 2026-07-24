@@ -578,10 +578,19 @@ class SUMOFleetPyServer():
                         
 
                 # B) Vehicle is not in the simulation, but already loaded and waiting to be inserted (pending) --> no new route needed
-                elif (sumo_vid not in current_sumo_vehicle_ids_set) and (sumo_vid in traci.simulation.getPendingVehicles()): 
+                elif (sumo_vid not in current_sumo_vehicle_ids_set) and (sumo_vid in traci.simulation.getPendingVehicles()) and (sumo_vid not in traci.simulation.getLoadedIDList()): 
                     LOG.debug(f"{sumo_vid}/{self._sumo_v_id_to_fleetpy_v_id(sumo_vid)} has to wait to get inserted at Edge {traci.vehicle.getRoute(sumo_vid)[0]}") 
                 
-                # C) Vehicle not in Simualtion: Try to Load Vehicle and insert it in the simulation    
+                # C) Vehicle is loaded and has changed its route in FleetPy
+                elif (sumo_vid not in current_sumo_vehicle_ids_set) and (sumo_vid not in traci.simulation.getPendingVehicles()) and (sumo_vid in traci.simulation.getLoadedIDList()): 
+                    LOG.debug(f"Vehicle {sumo_vid} is loaded in SUMO but not yet inserted. It has changed its route in FleetPy to {sumo_route.SUMO_route_edges}. Its destination is changed using the SUMO Router to {sumo_route.SUMO_route_edges[-1]}.")
+                    print(f"Vehicle {sumo_vid} is loaded in SUMO but not yet inserted. It has changed its route in FleetPy to {sumo_route.SUMO_route_edges}. Its destination is changed using the SUMO Router to {sumo_route.SUMO_route_edges[-1]}.")
+                    traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
+                    traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=str(sumo_route.SUMO_route_edges[-1]))
+                    traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=str(sumo_route.SUMO_route_edges))
+                    breakpoint()
+                
+                # D) Vehicle not in Simualtion: Try to Load Vehicle and insert it in the simulation    
                 else: 
                     if self.sumo_binary == "sumo":
                         try:
