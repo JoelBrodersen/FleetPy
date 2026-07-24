@@ -601,12 +601,8 @@ class SUMOFleetPyServer():
                             LOG.warning(traci.simulation.getEndingTeleportIDList())
                             LOG.warning(traci.simulation.getStartingTeleportIDList())
                             LOG.warning(traci.vehicle.getTeleportingIDList())
-                            LOG.warning(sumo_vid in traci.vehicle.getIDList())
-                            if sumo_vid in traci.simulation.getLoadedIDList():
-                                LOG.warning(f"Vehicle {sumo_vid} is already loaded in SUMO, and therefore not be added.")
-                                print(f"Vehicle {sumo_vid} is already loaded in SUMO, and therefore not be added.")
-                                breakpoint()
-                                LOG.warning(f"Vehicle {sumo_vid} is already in SUMO, but could not be added. This might be due to a route conflict or a timing issue.")
+                            print(f"Vehicle {sumo_vid} is already in SUMO, but could not be added. This might be due to a route conflict or a timing issue.")
+                            breakpoint()
                             raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()} {e}')
                     
                     
