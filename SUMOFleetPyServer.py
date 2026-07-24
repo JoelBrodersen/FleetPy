@@ -597,6 +597,9 @@ class SUMOFleetPyServer():
                             traci.vehicle.addFull(vehID=sumo_vid, routeID=sumo_route.route_id, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple],departPos=sumo_route.departPos, arrivalPos=sumo_route.arrivalPos)  
                         except Exception as e:
                             LOG.warning(f'Vehicle {sumo_vid} could not be added')
+                            LOG.warning(current_sumo_vehicle_ids_set)
+                            LOG.warning(current_sumo_teleporting_ids_set)
+                            LOG.warning(traci.simulation.getPendingVehicles())
                             LOG.warning(traci.simulation.getLoadedIDList())
                             LOG.warning(traci.simulation.getEndingTeleportIDList())
                             LOG.warning(traci.simulation.getStartingTeleportIDList())
