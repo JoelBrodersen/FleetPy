@@ -597,6 +597,8 @@ class SUMOFleetPyServer():
                             traci.vehicle.addFull(vehID=sumo_vid, routeID=sumo_route.route_id, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple],departPos=sumo_route.departPos, arrivalPos=sumo_route.arrivalPos)  
                         except Exception as e:
                             LOG.warning(f'Vehicle {sumo_vid} could not be added')
+                            in_simulation_checker = sumo_vid in current_sumo_vehicle_ids_set
+                            LOG.warning(f"Vehicle {sumo_vid} is already in SUMO : {in_simulation_checker}, but could not be added. This might be due to a route conflict or a timing issue.")
                             LOG.warning(current_sumo_vehicle_ids_set)
                             LOG.warning(current_sumo_teleporting_ids_set)
                             LOG.warning(traci.simulation.getPendingVehicles())
