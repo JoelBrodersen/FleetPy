@@ -77,6 +77,7 @@ class SUMORoute():
             if edgeID is not None:
                 self.SUMO_route_all_edges.append(edgeID)
             else:
+                LOG.warning(f"Route {self.FP_route} contains an edge which is not in the SUMO network: {o_node} -> {d_node}")
                 raise ValueError(f"Route {self.FP_route} contains an edge which is not in the SUMO network: {o_node} -> {d_node}")
 
             
@@ -85,7 +86,8 @@ class SUMORoute():
             #print(f"Route {self.FP_route} only consists of internal edges, check this!")
             #print(f"SUMO route is {self.SUMO_route_all_edges}")
             preceding_internal_edges =[":"]
-            tailing_internal_edges = [":"]            
+            tailing_internal_edges = [":"]    
+            LOG.warning(f"Route {self.FP_route} only consists of internal edges, check this!")        
         else:
             preceding_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) < self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[0])]
             tailing_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) > self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[-1])]
