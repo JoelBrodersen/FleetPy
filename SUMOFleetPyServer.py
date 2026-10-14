@@ -26,7 +26,7 @@ from run_examples import run_scenarios
 import random
 import time
 from scipy import stats
-
+import re
 
 """ 
 This script can be used to create a FleetPy-Simulation coupled to SUMO.
@@ -48,6 +48,70 @@ LOG = logging.getLogger(__name__)
 
 
 t_start = time.time()
+
+class SUMORoute():
+    def __init__(self, SUMOFleetPyServer):
+        self.SUMOFleetPyServer = SUMOFleetPyServer
+        self.route_id = None
+        self.SUMO_route_all_edges = []
+        self.SUMO_route_non_internal_edges = []
+        self.SUMO_route_edges = []
+        self.preceding_internal_edges = []
+        self.preceding_SUMO_edge = []
+        self.tailing_SUMO_edge = []
+        self.tailing_internal_edges = []
+        self.FP_route = []
+        self.departPos  = 0
+        self.arrivalPos = "max"
+
+    def transform_route_fp_to_sumo(self):       
+        for i in range(0, len(self.FP_route)-1):
+            o_node = self.FP_route[i]
+            d_node = self.FP_route[i+1]
+            if o_node == d_node:
+                LOG.warning(f"Route {self.FP_route} contains a loop at node {o_node}. This is not allowed in SUMO. Please check the route generation.")
+                continue 
+
+            edgeID = self.SUMOFleetPyServer.g_fs_edge_to_sumo_edge_id.get((o_node, d_node)) if o_node != d_node else None
+
+            if edgeID is not None:
+                self.SUMO_route_all_edges.append(edgeID)
+            else:
+                LOG.warning(f"Route {self.FP_route} contains an edge which is not in the SUMO network: {o_node} -> {d_node}")
+                raise ValueError(f"Route {self.FP_route} contains an edge which is not in the SUMO network: {o_node} -> {d_node}")
+
+            
+        self.SUMO_route_non_internal_edges = [edge for edge in self.SUMO_route_all_edges if not edge.startswith(":")]
+        if len(self.SUMO_route_non_internal_edges) == 0:
+            #print(f"Route {self.FP_route} only consists of internal edges, check this!")
+            #print(f"SUMO route is {self.SUMO_route_all_edges}")
+            preceding_internal_edges =[":"]
+            tailing_internal_edges = [":"]    
+            LOG.warning(f"Route {self.FP_route} only consists of internal edges, check this!")        
+        else:
+            preceding_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) < self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[0])]
+            tailing_internal_edges = [edge for edge in self.SUMO_route_all_edges if edge.startswith(":") and self.SUMO_route_all_edges.index(edge) > self.SUMO_route_all_edges.index(self.SUMO_route_non_internal_edges[-1])]
+        LOG.debug(f"Preceding Internal Edges: {preceding_internal_edges}")
+        LOG.debug(f"Tailing Internal Edges: {tailing_internal_edges}")
+        
+        
+        if len(preceding_internal_edges) > 0:
+            preceding_addition_row = self.SUMOFleetPyServer.g_fp_edge_df[self.SUMOFleetPyServer.g_fp_edge_df["to_node"]==self.FP_route[0]]
+            if len(preceding_addition_row) != 1:
+                raise ValueError(
+                    f"Expected exactly one matching row for to_node={self.FP_route[0]}, got {len(preceding_addition_row)}")
+            self.preceding_SUMO_edge = [preceding_addition_row.iloc[0]["source_edge_id"]]
+        
+        if len(tailing_internal_edges) > 0:
+            tailing_addition_row = self.SUMOFleetPyServer.g_fp_edge_df[self.SUMOFleetPyServer.g_fp_edge_df["from_node"]==self.FP_route[-1]]
+            if len(tailing_addition_row) != 1:
+                raise ValueError(
+                    f"Expected exactly one matching row for from_node={self.FP_route[-1]}, got {len(tailing_addition_row)}")
+            self.tailing_SUMO_edge = [tailing_addition_row.iloc[0]["source_edge_id"]]   
+        self.SUMO_route_edges = self.preceding_SUMO_edge + self.SUMO_route_non_internal_edges + self.tailing_SUMO_edge
+        #print(f"Preceding SUMO edge: {self.preceding_SUMO_edge}")
+        #print(f"Tailing SUMO edge: {self.tailing_SUMO_edge}")
+        #print(f"Resulting SUMO route for FleetPy route {self.FP_route}: {self.SUMO_route_edges}")
 
 
 class SUMOFleetPyServer():
@@ -87,6 +151,8 @@ class SUMOFleetPyServer():
         self.fp_to_sumo_veh_id_dict= {}
         self.sumo_to_fp_veh_id_dict = {}
         self.rejected_requests = set() 
+        self.sumo_router_usage = []
+        self.FP_router_usage = 0 
 
     def _finalize_setup(self):
         self.g_end_time_setup = time.time()
@@ -267,7 +333,6 @@ class SUMOFleetPyServer():
             
         sumo_node_list = node_df.source_node_id
         sumo_node_list = sumo_node_list.values.tolist()
-
         self.g_sumo_edge_id_to_fs_edge = sumo_edge_id_to_fs_edge
         self.g_fs_edge_to_sumo_edge_id = fs_edge_to_sumo_edge_id
         self.sumo_node_list = sumo_node_list
@@ -368,6 +433,8 @@ class SUMOFleetPyServer():
 
             step+=1
         traci.close()
+        print(f"SUMO-Route used for rerouting: {len(self.sumo_router_usage)} times")
+        LOG.warning(f"FleetPy-Routing used for rerouting: {self.FP_router_usage} times")
         self._post_sim_evaluation()
 
     def _post_sim_evaluation(self):
@@ -405,7 +472,7 @@ class SUMOFleetPyServer():
                 else:
                     raise ValueError(f"No edge found in FleetPy edge dataframe for origin node {req_obj.o_node} of request {req_id}")
 
-                if self.fp_scenario_config.get(G_STUDY_NAME) in ["fleetpy_sumo_coupling_in2","fleetpy_sumo_coupling_in"]:
+                if self.fp_scenario_config.get(G_STUDY_NAME) in ["fleetpy_sumo_coupling_in2","fleetpy_sumo_coupling_in","fleetpy_sumo_coupling_in3"]:
                     node_identifier = "from_node"
                 else:
                     node_identifier = "to_node"
@@ -440,101 +507,149 @@ class SUMOFleetPyServer():
         for opid_vid_tuple in route_dict.keys():
             veh_obj = self.fp_sim_env.sim_vehicles[opid_vid_tuple]
             sumo_vid = self._fleetpy_v_id_to_sumo_v_id(opid_vid_tuple)
-            route = route_dict[opid_vid_tuple]       
-            sumoRoute = self._transform_route_fp_to_sumo(route)
+            route = route_dict[opid_vid_tuple]
             
-            LOG.debug(f"New Route from FleetPy {opid_vid_tuple} {route} --> {sumo_vid} {sumoRoute}")
-            route_name = "Route_"+str(sumo_vid)+"_"+str(sim_time) 
+            
+            sumo_route = SUMORoute(self)
+            sumo_route.route_id = "Route_"+str(sumo_vid)+"_"+str(sim_time)
+            sumo_route.FP_route = route
+            sumo_route.transform_route_fp_to_sumo()
+            
+            LOG.debug(f"New Route from FleetPy {opid_vid_tuple} {route} --> {sumo_vid} {sumo_route}")
             # If route only consisted of internal edges, it would not be a sumoRoute
 
-            if len(sumoRoute) > 0:                    
+            if len(sumo_route.SUMO_route_edges) > 0:                    
                 
-                traci.route.add(route_name, sumoRoute)  # TODO does this lead to an infinite amount of routes in long simulations? -->Yes but removal function is not yet included in traci and will probably included in SUMO 1.22.0  
+                traci.route.add(sumo_route.route_id, sumo_route.SUMO_route_edges)  # TODO does this lead to an infinite amount of routes in long simulations? -->Yes but removal function is not yet included in traci and will probably included in SUMO 1.22.0  
                 
+                
+                if sumo_route.tailing_SUMO_edge != []:
+                    sumo_route.arrivalPos = 0
+
+                if sumo_route.preceding_SUMO_edge != []:
+                    preceding_edge_length = traci.lane.getLength(f"{sumo_route.preceding_SUMO_edge[0]}_0")
+                    sumo_route.departPos = max(0, preceding_edge_length)
+
                 # A) Vehicle is already in Simulation or currently teleporting
                 if (sumo_vid in current_sumo_vehicle_ids_set) or (sumo_vid in current_sumo_teleporting_ids_set):
                     edgeID = traci.vehicle.getRoadID(sumo_vid)
                     currentRoute = traci.vehicle.getRoute(sumo_vid)
-
+                    LOG.debug(f"Vehicle {sumo_vid} is already in SUMO on edge {edgeID} with current route {currentRoute} and new route {sumo_route.SUMO_route_edges}")
                     ## SUMO-Route Update needed?
-                    if sumoRoute != currentRoute: ## Route needs to be updated because of an new order of fleetpy/teleport
-                        #print("Route Update in SUMO",sumo_vid,"@",edgeID,currentRoute,"-->",sumoRoute)
-                        is_valid_route = True
-                        try:
-                            traci.vehicle.setRoute(sumo_vid,sumoRoute)
-                            if traci.vehicle.isRouteValid(sumo_vid) is False:
-                                LOG.warning(f'Route of {sumo_vid} is not valid') # No occurence
-                                is_valid_route = False
-                            else:
-                                traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=sumoRoute[-1])
-                                traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=sumoRoute)
-                        except:
-                            LOG.warning(f'Route of {sumo_vid} could not be set to: {sumoRoute}')
-                            #print(f'Route of {sumo_vid} could not be set to: {sumoRoute}')
-                            is_valid_route = False
-                        
-                        if is_valid_route == False:
-                                print(f"Vehicle {sumo_vid} has an invalid route {sumoRoute}")
-                                print("Use SUMO rerouter")
-                                try:
-                                    traci.vehicle.changeTarget(sumo_vid, sumoRoute[-1])
-                                    #traci.vehicle.rerouteTraveltime(sumo_vid)
-                                    LOG.warning(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
-                                    #print(f"Vehicle {sumo_vid} has been rerouted to {sumoRoute[-1]} on {traci.vehicle.getRoute(sumo_vid)}")
+                    if tuple(sumo_route.SUMO_route_edges) != currentRoute: ## Route needs to be updated because of an new order of fleetpy/teleport
+                        #print(f"Route Update in SUMO: {sumo_vid} @{edgeID} {currentRoute}-{type(currentRoute)} --> {sumo_route.SUMO_route_edges}-{type(sumo_route.SUMO_route_edges)}")
+                        is_valid_route = True                       
 
-                                except:
-                                    LOG.warning(f"Vehicle {sumo_vid} could not be rerouted")
-                                    breakpoint()
+                        try:
+                            traci.vehicle.setRouteID(sumo_vid,sumo_route.route_id)
+                            
+                        except Exception as e:
+
+                            
+                            ## This is an Edge-Case when a vehicle is on a junction-internal edge that leads to another junction and the new route does not include this edge. In Reality this would mean that the vehicle is already on the way to the edge of the old route and cannot be rerouted anymore. 
+                            ## TODO Find a better solution for this edge case. Currently the vehicle is rerouted to the last edge of the new route using the SUMO Router. This is not optimal but it is a workaround for this edge case.
+                            if str(e) == f"Route replacement failed for vehicle '{sumo_vid}' (Vehicle is on junction-internal edge leading elsewhere).":                           
+                                LOG.warning(f"Vehicle {sumo_vid} is on a junction-internal edge leading elsewhere. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                print(f"Vehicle {sumo_vid} is on a junction-internal edge leading elsewhere. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                current_edge = traci.vehicle.getRoadID(sumo_vid)
+                                old_route = list(traci.vehicle.getRoute(sumo_vid))
+                                traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
+                                self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))
+                            elif re.fullmatch(rf"Route replacement failed for vehicle '{re.escape(sumo_vid)}' \(current edge '[^']+' not found in new route\)\.",str(e)):
+                                LOG.warning(f"Vehicle {sumo_vid} is on an edge that is not part of the new route. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                print(f"Vehicle {sumo_vid} is on an edge that is not part of the new route. Attempting to change target to {sumo_route.SUMO_route_edges[-1]} using the SUMO Router.")
+                                current_edge = traci.vehicle.getRoadID(sumo_vid)
+                                old_route = list(traci.vehicle.getRoute(sumo_vid))
+                                traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
+                                self.sumo_router_usage.append((sumo_vid, sim_time, current_edge, old_route, sumo_route.SUMO_route_edges))                           
+                            
+                            else:
+                                print(f"Unknown error occurred while setting route for {sumo_vid} at sim_time {sim_time} at edge {traci.vehicle.getRoadID(sumo_vid)} with current route {traci.vehicle.getRoute(sumo_vid)} and new route {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}")
+                                raise ValueError(f"Unknown error occurred while setting route for {sumo_vid}: {e}")
+                        
+                        ## Check if the new route is valid for the vehicle
+                        if traci.vehicle.isRouteValid(sumo_vid) is False:
+                            raise ValueError(f"Route of {sumo_vid} is not valid: {sumo_route.SUMO_route_edges}")
+                        else:
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=str(sumo_route.SUMO_route_edges[-1]))
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=str(sumo_route.SUMO_route_edges))
+                                  
                     else:
-                        LOG.debug(f"Vehicle {sumo_vid} is Loaded and in Network and SumoRoute {sumoRoute} is current Route {currentRoute}")
+                        LOG.debug(f"Vehicle {sumo_vid} is Loaded and in Network and SumoRoute {sumo_route.SUMO_route_edges} is current Route {currentRoute}")
                         pass 
                         
 
                 # B) Vehicle is not in the simulation, but already loaded and waiting to be inserted (pending) --> no new route needed
-                elif (sumo_vid not in current_sumo_vehicle_ids_set) and (sumo_vid in traci.simulation.getPendingVehicles()): 
+                elif (sumo_vid not in current_sumo_vehicle_ids_set) and (sumo_vid in traci.simulation.getPendingVehicles()) and (sumo_vid not in traci.simulation.getLoadedIDList()): 
                     LOG.debug(f"{sumo_vid}/{self._sumo_v_id_to_fleetpy_v_id(sumo_vid)} has to wait to get inserted at Edge {traci.vehicle.getRoute(sumo_vid)[0]}") 
                 
-                # C) Vehicle not in Simualtion: Try to Load Vehicle and insert it in the simulation    
+                # C) Vehicle is loaded and has changed its route in FleetPy
+                elif (sumo_vid not in current_sumo_vehicle_ids_set) and (sumo_vid not in traci.simulation.getPendingVehicles()) and (sumo_vid in traci.simulation.getLoadedIDList()): 
+                    LOG.debug(f"Vehicle {sumo_vid} is loaded in SUMO but not yet inserted. It has changed its route in FleetPy to {sumo_route.SUMO_route_edges}. Its destination is changed using the SUMO Router to {sumo_route.SUMO_route_edges[-1]}.")
+                    print(f"Vehicle {sumo_vid} is loaded in SUMO but not yet inserted. It has changed its route in FleetPy to {sumo_route.SUMO_route_edges}. Its destination is changed using the SUMO Router to {sumo_route.SUMO_route_edges[-1]}.")
+                    traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
+                    traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=str(sumo_route.SUMO_route_edges[-1]))
+                    traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=str(sumo_route.SUMO_route_edges))
+                    breakpoint()
+                
+                # D) Vehicle not in Simualtion: Try to Load Vehicle and insert it in the simulation    
                 else: 
                     if self.sumo_binary == "sumo":
                         try:
-                            traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple])   
-                        except:
-                                LOG.debug(f'Vehicle {sumo_vid} could not be added')
-                                LOG.debug(traci.simulation.getLoadedIDList())
-                                LOG.debug(traci.simulation.getEndingTeleportIDList())
-                                LOG.debug(traci.simulation.getStartingTeleportIDList())
-                                LOG.debug(traci.vehicle.getTeleportingIDList())
-                                LOG.debug(sumo_vid in traci.vehicle.getIDList()) 
+                            traci.vehicle.addFull(vehID=sumo_vid, routeID=sumo_route.route_id, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple],departPos=sumo_route.departPos, arrivalPos=sumo_route.arrivalPos)  
+                        except Exception as e:
+                            LOG.warning(f'Vehicle {sumo_vid} could not be added')
+                            in_simulation_checker = sumo_vid in current_sumo_vehicle_ids_set
+                            LOG.warning(f"Vehicle {sumo_vid} is already in SUMO : {in_simulation_checker}, but could not be added. This might be due to a route conflict or a timing issue.")
+                            LOG.warning(current_sumo_vehicle_ids_set)
+                            LOG.warning(current_sumo_teleporting_ids_set)
+                            LOG.warning(traci.simulation.getPendingVehicles())
+                            LOG.warning(traci.simulation.getLoadedIDList())
+                            LOG.warning(traci.simulation.getEndingTeleportIDList())
+                            LOG.warning(traci.simulation.getStartingTeleportIDList())
+                            LOG.warning(traci.vehicle.getTeleportingIDList())
+                            print(f"Vehicle {sumo_vid} is already in SUMO, but could not be added. This might be due to a route conflict or a timing issue.")
+                            breakpoint()
+                            raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()} {e}')
+                    
+                    
                     elif self.sumo_binary == "sumo-gui":
                     
                         try:
-                            traci.vehicle.addFull(vehID=sumo_vid, routeID=route_name, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple])
+                            traci.vehicle.addFull(vehID=sumo_vid, routeID=sumo_route.route_id, typeID=self.fp_opvid_to_veh_type[opid_vid_tuple],departPos=sumo_route.departPos, arrivalPos=sumo_route.arrivalPos)
                             traci.vehicle.setParameter(objectID=sumo_vid, key="Num_PAX",value=len([rq.get_rid_struct() for rq in veh_obj.pax]))
                             traci.vehicle.setParameter(objectID=sumo_vid, key="PAX",value=[rq.get_rid_struct() for rq in veh_obj.pax])
-                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest",value=sumoRoute[-1])
-                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg",value=sumoRoute)
-
-                            LOG.debug(f"Inserted Vehicle to SUMO: {sumo_vid},{route_name},{self.fp_opvid_to_veh_type[opid_vid_tuple]}")
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest",value=sumo_route.SUMO_route_edges[-1])
+                            traci.vehicle.setParameter(objectID=sumo_vid, key="cleg",value=sumo_route.SUMO_route_edges)
+                            LOG.debug(f"Inserted Vehicle to SUMO: {sumo_vid},{sumo_route.route_id},{self.fp_opvid_to_veh_type[opid_vid_tuple]}")
                             if traci.vehicle.isRouteValid(sumo_vid) is False:
                                 LOG.warning(f'Route of {sumo_vid} is not valid')
                     
-                        except:
-                                LOG.debug(f'Vehicle {sumo_vid} could not be added')
-                                LOG.debug(traci.simulation.getLoadedIDList())
-                                pass
+                        except Exception as e:
+                            LOG.warning(f'Vehicle {sumo_vid} could not be added')
+                            LOG.warning(traci.simulation.getLoadedIDList())
+                            LOG.warning(traci.simulation.getEndingTeleportIDList())
+                            LOG.warning(traci.simulation.getStartingTeleportIDList())
+                            LOG.warning(traci.vehicle.getTeleportingIDList())
+                            LOG.warning(sumo_vid in traci.vehicle.getIDList())
+                            raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()} {e}')
+
                 if sumo_vid in traci.simulation.getEndingTeleportIDList():
                     LOG.warning(f"SUMO-vehicle  {sumo_vid} ended to teleport in this timestep")      
             
-            ## If the SUMO route is len(0) it consists only of internal edges. The vehicles  are immediately considered to be "arrived" an teleported to the node
             else:  
+                LOG.warning(f"Vehicle {sumo_vid} at {veh_obj.pos} has only internal route: {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}"  )
+                breakpoint()
                 LOG.debug(f"veh {veh_obj.vid} @ {veh_obj.pos} gets internal route: {route}")
                 if veh_obj.pos[0] == route[-1] and veh_obj.pos[1] == None:
                     LOG.debug(f"Vehicle gets Route to own position:{veh_obj.vid} {veh_obj.pos}")
+                    
                 elif veh_obj.status == VRL_STATES.IDLE:
                     LOG.debug(f"IDLE Vehicle with new Route found that is only internal: {veh_obj}, {veh_obj.cl_remaining_route} --> No Route Change, Vehicle will be rerouted in next step")
                 else:
                     arrivedVehicles_internal.update({sumo_vid:route[-1]})  
+                    print(f"Vehicle {veh_obj.vid} has only internal route: {route} and will be removed from SUMO and FleetPy will be updated with new position {route[-1]} This should not happen anymore")
+                    breakpoint()
 
         return arrivedVehicles_internal
 
@@ -551,35 +666,6 @@ class SUMOFleetPyServer():
             self.sumo_to_fp_veh_id_dict[sumo_v_id_str] = (int(op_id), int(vid))
         return self.sumo_to_fp_veh_id_dict[sumo_v_id_str]
             
-    def _transform_route_fp_to_sumo(self,route):       
-        sumoRoute = []
-        sumoRoute_full  = []
-        for i in range(0, len(route)-1):
-            o_node = route[i]
-            d_node = route[i+1]
-                
-            #If edge is an internal edge it does not need to be added to the sumoRoute, if route only consisted of internal edges, it would not be a sumoRoute
-            if o_node != d_node:
-                edgeID = self.g_fs_edge_to_sumo_edge_id.get((o_node,d_node))
-            else:
-                edgeID = None
-
-            if edgeID == None:
-                    LOG.warning(f'There is a KeyError in the Route which is {o_node} -> {d_node} : {route}')
-            else:
-                sumoRoute_full.append(edgeID)
-            
-        sumoRoute_non_internal = [edge for edge in sumoRoute_full if not edge.startswith(":")]
-        first = sumoRoute_non_internal[0]
-        last = sumoRoute_non_internal[-1]
-        preceding_internal_edges = [edge for edge in sumoRoute_full if edge.startswith(":") and sumoRoute_full.index(edge) < sumoRoute_full.index(first)]
-        tailing_internal_edges = [edge for edge in sumoRoute_full if edge.startswith(":") and sumoRoute_full.index(edge) > sumoRoute_full.index(last)]
-        print(sumoRoute_full)
-        print(sumoRoute)
-        print(preceding_internal_edges)
-        print(tailing_internal_edges)
-        breakpoint()
-        return sumoRoute
 
     def _get_current_edge_tt(self,sim_time,sim_pos_dict,res_list,sim_start_time):
         sim_vehicle_id_list = traci.vehicle.getIDList()
@@ -736,7 +822,7 @@ class SUMOFleetPyServer():
 
     def _get_current_vehicle_positions(self):
         """ this function reads the positions of the specified vehicles from sumo and returns a dictionary
-        :param vehicle_ids: list integer of sumo vehicle ids to read positions
+        :param vehicle_ids: list integer of sumo vehicle ids to read positions,
         :param vehicle_to_position_dict: dictionary (operator_id, fleetsim vehicle id) -> fleetsim network position (tuple (o_node, d_node, frac_position) or (o_node, None, None))
                 for a single operator operator_id = 0
         :return: """
@@ -877,7 +963,6 @@ def indent_xml(elem, level=0):
 
 
 if __name__ == "__main__":
-    
     try:
         constant_config_path = sys.argv[1]
         scenario_config_path = sys.argv[2]
