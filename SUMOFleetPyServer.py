@@ -27,6 +27,7 @@ import random
 import time
 from scipy import stats
 import re
+import faulthandler
 
 """ 
 This script can be used to create a FleetPy-Simulation coupled to SUMO.
@@ -98,8 +99,7 @@ class SUMORoute():
         if len(preceding_internal_edges) > 0:
             preceding_addition_row = self.SUMOFleetPyServer.g_fp_edge_df[self.SUMOFleetPyServer.g_fp_edge_df["to_node"]==self.FP_route[0]]
             if len(preceding_addition_row) != 1:
-                raise ValueError(
-                    f"Expected exactly one matching row for to_node={self.FP_route[0]}, got {len(preceding_addition_row)}")
+                raise ValueError(f"Expected exactly one matching row for to_node={self.FP_route[0]}, got {len(preceding_addition_row)}")
             self.preceding_SUMO_edge = [preceding_addition_row.iloc[0]["source_edge_id"]]
         
         if len(tailing_internal_edges) > 0:
@@ -196,6 +196,11 @@ class SUMOFleetPyServer():
         SF = load_simulation_environment(scenario_cfgs[0])
         self.fp_scenario_config = scenario_cfgs[0]
         self.fp_sim_env = SF
+
+         # --- faulthandler: write native-crash/hang stack traces into the output folder ---
+        fault_log_path = os.path.join(self.fp_sim_env.dir_names[G_DIR_OUTPUT], "faulthandler.log")
+        self._fault_log = open(fault_log_path, "w")   # keep a reference, otherwise it gets closed
+        faulthandler.enable(file=self._fault_log, all_threads=True)
 
         # Get interval in which new network statistics are gathered and sent to FleetPy to updated network (if not given, no statistics are gathered)
         if self.fp_sim_env.scenario_parameters.get(G_SUMO_STAT_INT) is None:
@@ -590,7 +595,6 @@ class SUMOFleetPyServer():
                     traci.vehicle.changeTarget(sumo_vid, sumo_route.SUMO_route_edges[-1])
                     traci.vehicle.setParameter(objectID=sumo_vid, key="cleg_dest", value=str(sumo_route.SUMO_route_edges[-1]))
                     traci.vehicle.setParameter(objectID=sumo_vid, key="cleg", value=str(sumo_route.SUMO_route_edges))
-                    breakpoint()
                 
                 # D) Vehicle not in Simualtion: Try to Load Vehicle and insert it in the simulation    
                 else: 
@@ -609,7 +613,6 @@ class SUMOFleetPyServer():
                             LOG.warning(traci.simulation.getStartingTeleportIDList())
                             LOG.warning(traci.vehicle.getTeleportingIDList())
                             print(f"Vehicle {sumo_vid} is already in SUMO, but could not be added. This might be due to a route conflict or a timing issue.")
-                            breakpoint()
                             raise ValueError(f'Vehicle {sumo_vid} could not be added to SUMO. Check if the route is valid: {sumo_route.SUMO_route_edges}. Current SUMO vehicle list: {traci.vehicle.getIDList()} {e}')
                     
                     
@@ -639,7 +642,6 @@ class SUMOFleetPyServer():
             
             else:  
                 LOG.warning(f"Vehicle {sumo_vid} at {veh_obj.pos} has only internal route: {sumo_route.FP_route} --> {sumo_route.SUMO_route_edges}"  )
-                breakpoint()
                 LOG.debug(f"veh {veh_obj.vid} @ {veh_obj.pos} gets internal route: {route}")
                 if veh_obj.pos[0] == route[-1] and veh_obj.pos[1] == None:
                     LOG.debug(f"Vehicle gets Route to own position:{veh_obj.vid} {veh_obj.pos}")
@@ -649,7 +651,6 @@ class SUMOFleetPyServer():
                 else:
                     arrivedVehicles_internal.update({sumo_vid:route[-1]})  
                     print(f"Vehicle {veh_obj.vid} has only internal route: {route} and will be removed from SUMO and FleetPy will be updated with new position {route[-1]} This should not happen anymore")
-                    breakpoint()
 
         return arrivedVehicles_internal
 
@@ -993,4 +994,8 @@ if __name__ == "__main__":
     SUMOFleetPyCoupling.setup_sumo_simulation()
     SUMOFleetPyCoupling.setup_network_translation()
     SUMOFleetPyCoupling.setup_hybrid_router()
-    SUMOFleetPyCoupling.run_coupled_simulation()
+    try:
+        SUMOFleetPyCoupling.run_coupled_simulation()
+    except BaseException:
+        LOG.exception("Fatal error in coupled simulation")
+        raise
