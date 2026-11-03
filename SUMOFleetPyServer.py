@@ -19,6 +19,8 @@ import numpy as np
 import pathlib
 from src.SUMOcontrolledSim import SUMOcontrolledSim
 from src.misc.init_modules import load_simulation_environment
+from src.coupling.SUMO.sumocfg_utils import merge_additional_files
+
 import src.misc.config as config
 from src.misc.globals import *
 import src.evaluation.standard as eval
