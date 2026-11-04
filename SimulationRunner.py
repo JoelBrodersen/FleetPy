@@ -11,7 +11,7 @@ import math
 import csv
 import argparse
 import xml.etree.ElementTree as ET
-
+from tqdm import tqdm
 
 py_path = pathlib.Path(__file__)
 
@@ -21,6 +21,11 @@ def get_current_max_key(FP_path):
     pattern = r'^\d+$' ## only digits
     filtered_keys = [int(key) for key in keys if re.match(pattern, key)]
     return max(filtered_keys)
+
+def list_str_to_list(list_str):
+    items = list_str.split('-')
+    return list(range(int(items[0]), int(items[-1]) + 1)) if len(items) > 1 else [int(items[0])]
+    
 
 class SimulationRunner:
 
@@ -42,7 +47,27 @@ class SimulationRunner:
         self.rb_sc_df = rb_sc_df.set_index("routing_behavior_scenario")
 
     def create_sc_config_files(self):
-        for sc_index, row in self.sc_config.iterrows():
+        
+        print(self.sc_config)
+
+
+        if "Seeds" in self.sc_config.columns:
+            new_rows = []
+            for sc_index, row in tqdm(self.sc_config.iterrows(), total=self.sc_config.shape[0], desc="Adding Mutiple Seeds to Scenarios"):
+                row_seed_list = list_str_to_list(row["Seeds"])
+
+                for seed in row_seed_list:
+                    new_row = row.copy()
+                    new_row["simulation_index"] = int(sc_index)+1000*int(seed)               
+                    new_row["random_seed"] = seed
+                    new_rows.append(new_row)
+            
+            new_rows_df = pd.DataFrame(new_rows)
+
+            self.sc_config = new_rows_df.set_index('simulation_index')
+
+        
+        for sc_index, row in tqdm(self.sc_config.iterrows(), total=self.sc_config.shape[0], desc="Creating Scenario Config Files"):
             sc_df = pd.DataFrame()
             scenario_name = f'{str(sc_index).zfill(3)}_{row["network_name"]}_{row["MOD_demand_subset"]}_{row["sim_env"]}'
             p_cstr_dt = row.get('p_cstr_dt') if row.get('p_cstr_dt') is not None else 0
@@ -71,7 +96,8 @@ class SimulationRunner:
             sc_df['MOD_demand_subset'] = [row['MOD_demand_subset']]
             sc_df['sumo_t_update'] = [int(row['sumo_t_update']) if not pd.isna(row['sumo_t_update']) else 24 * 3600]
             sc_df['sumo_fcd_vehicles'] = [row['sumo_fcd_vehicles']]
-            sc_df['random_seed'] = [row['random_seed']]
+            sc_df['random_seed'] = [int(row['random_seed'])]
+            sc_df['Seeds'] = [row["Seeds"]]
             sc_df["rerouting_sc"] = [row["rerouting_sc"]]
             sc_df["hybrid_router"] = [int(row["hybrid_router"])]
             sc_df["p_ref"] = [float(row["p_ref"])]
@@ -99,6 +125,7 @@ class SimulationRunner:
                 sc_df["rq_file"] = [f"{row['demand_base']}_s_{str(row['random_seed']).zfill(2)}_{row['MOD_demand_subset']}_rbsc_{str(int(row['routing_behavior_scenario'])).zfill(2)}.csv"]
                 sc_df["rq_type"] = ["IndividualRoutingBehaviorRequest"]
             sc_df["op_const_boarding_time"] = [float(row["op_const_boarding_time"])]
+  
             self.sc_config_file_dict.update({sc_index:sc_df.squeeze()})
             sc_df.to_csv(py_path.parent/"studies"/self.study_name/"scenarios"/f"{scenario_name}.csv", index=False)
 
