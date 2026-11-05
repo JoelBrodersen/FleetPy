@@ -479,7 +479,8 @@ class SUMOFleetPyServer():
                 else:
                     raise ValueError(f"No edge found in FleetPy edge dataframe for origin node {req_obj.o_node} of request {req_id}")
 
-                if self.fp_scenario_config.get(G_STUDY_NAME) in ["fleetpy_sumo_coupling_in2","fleetpy_sumo_coupling_in","fleetpy_sumo_coupling_in3"]:
+                # In earlier versions of the FleetPy-SUMO coupling, the node identifier for the destination edge was "from_node". In the newer versions, it is "to_node". TODO: Remove this check once the older versions are no longer supported.
+                if self.fp_scenario_config.get(G_STUDY_NAME) in ["fleetpy_sumo_coupling_in2","fleetpy_sumo_coupling_in"]:
                     node_identifier = "from_node"
                 else:
                     node_identifier = "to_node"
