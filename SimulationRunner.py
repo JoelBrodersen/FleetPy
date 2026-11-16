@@ -48,9 +48,6 @@ class SimulationRunner:
 
     def create_sc_config_files(self):
         
-        print(self.sc_config)
-
-
         if "Seeds" in self.sc_config.columns:
             new_rows = []
             for sc_index, row in tqdm(self.sc_config.iterrows(), total=self.sc_config.shape[0], desc="Adding Mutiple Seeds to Scenarios"):
@@ -68,6 +65,8 @@ class SimulationRunner:
 
         
         for sc_index, row in tqdm(self.sc_config.iterrows(), total=self.sc_config.shape[0], desc="Creating Scenario Config Files"):
+            if sc_index not in self.selected_scenarios:
+                continue
             sc_df = pd.DataFrame()
             scenario_name = f'{str(sc_index).zfill(3)}_{row["network_name"]}_{row["MOD_demand_subset"]}_{row["sim_env"]}'
             p_cstr_dt = row.get('p_cstr_dt') if row.get('p_cstr_dt') is not None else 0
